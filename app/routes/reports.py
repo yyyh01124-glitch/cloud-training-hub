@@ -128,6 +128,23 @@ def delete_report(report_id):
     return redirect(url_for('report.list_reports'))
 
 
+@report_bp.route('/missing')
+@login_required
+def missing_reports():
+    if current_user.role.name not in ('admin', 'teacher'):
+        return redirect(url_for('report.list_reports'))
+    from datetime import date
+    from app.models import User
+    today = date.today()
+    students = User.query.filter(User.role.has(name='student'), User.is_active == True).all()
+    missing = []
+    for s in students:
+        r = DailyReport.query.filter_by(user_id=s.id, report_date=today).first()
+        if not r:
+            missing.append(s)
+    return render_template('reports/missing.html', missing=missing, today=today)
+
+
 @report_bp.route('/stats')
 @login_required
 def stats():

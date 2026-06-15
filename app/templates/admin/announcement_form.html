@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if announcement else '发布' }}公告{% endblock %}
+{% block page_title_bar %}{{ '编辑' if announcement else '发布' }}公告{% endblock %}
+{% block content %}
+<div class="form-card">
+    <form method="post">
+        <div class="mb-3">
+            <label for="title" class="form-label">标题</label>
+            <input type="text" class="form-control" name="title" value="{{ announcement.title if announcement else '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">内容</label>
+            <textarea class="form-control" name="content" rows="6">{{ announcement.content if announcement else '' }}</textarea>
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" name="is_pinned" {{ 'checked' if announcement and announcement.is_pinned }}>
+            <label class="form-check-label">置顶公告</label>
+        </div>
+        <button type="submit" class="btn btn-primary">发布</button>
+        <a href="{{ url_for('announcement.list_announcements') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

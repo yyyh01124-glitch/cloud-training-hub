@@ -95,6 +95,23 @@ def run_crawl(config_id):
     return redirect(url_for('crawler.data_list'))
 
 
+@crawler_bp.route('/stats')
+@login_required
+def stats():
+    from sqlalchemy import func as safunc
+    type_data = db.session.query(
+        CrawlerData.source_type, safunc.count(CrawlerData.id)
+    ).group_by(CrawlerData.source_type).all()
+    config_data = db.session.query(
+        CrawlerConfig.name, safunc.count(CrawlerData.id)
+    ).join(CrawlerData, CrawlerData.config_id == CrawlerConfig.id, isouter=True
+    ).group_by(CrawlerConfig.id).all()
+    return render_template('crawler/stats.html',
+                           type_data=[{'name': t, 'value': c} for t, c in type_data],
+                           config_data=[{'name': n or '无配置', 'value': c} for n, c in config_data],
+                           total=CrawlerData.query.count())
+
+
 @crawler_bp.route('/data')
 @login_required
 def data_list():

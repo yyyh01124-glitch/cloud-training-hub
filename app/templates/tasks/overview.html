@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}教师任务总览{% endblock %}
+{% block page_title_bar %}教师任务总览{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('task.board') }}">任务看板</a> <span>/</span> 总览{% endblock %}
+{% block content %}
+<div class="row g-3">
+    {% for s in stats %}
+    <div class="col-lg-6">
+        <div class="chart-box">
+            <div class="chart-title">{{ s.project.name }} ({{ s.total }} 任务)</div>
+            <div id="chart-project-{{ s.project.id }}" style="height:260px;"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    var stats = {{ stats|tojson }};
+    stats.forEach(function(s) {
+        var data = [
+            {name:'待开始',value:s.status_counts.todo},
+            {name:'进行中',value:s.status_counts.in_progress},
+            {name:'待测试',value:s.status_counts.to_test},
+            {name:'已完成',value:s.status_counts.done},
+            {name:'已延期',value:s.status_counts.delayed},
+            {name:'已关闭',value:s.status_counts.closed}
+        ];
+        echarts.init(document.getElementById('chart-project-'+s.project.id)).setOption({
+            tooltip:{trigger:'item'}, legend:{bottom:0,textStyle:{fontSize:11}},
+            series:[{type:'pie',radius:['40%','65%'],itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},data:data}]
+        });
+    });
+})();
+</script>
+{% endblock %}

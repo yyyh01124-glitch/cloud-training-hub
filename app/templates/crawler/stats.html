@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}爬虫数据统计{% endblock %}
+{% block page_title_bar %}爬虫数据统计{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('crawler.data_list') }}">爬虫数据</a> <span>/</span> 统计{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="stat-card bg-blue"><div class="stat-value">{{ total }}</div><div class="stat-label">采集总数</div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="chart-box"><div class="chart-title">数据类型分布</div><div id="chart-type" style="height:340px;"></div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="chart-box"><div class="chart-title">关键词词云</div><div id="chart-wordcloud" style="height:340px;"></div></div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script>
+(function() {
+    echarts.init(document.getElementById('chart-type')).setOption({
+        tooltip: {trigger:'item'}, legend:{bottom:0},
+        series:[{type:'pie',radius:['45%','72%'],itemStyle:{borderRadius:6, borderColor:'#fff',borderWidth:3},
+            data:{{ type_data|tojson }}}]
+    });
+    var words = {{ config_data|tojson }}.map(function(d){return {name:d.name,value:d.value};});
+    echarts.init(document.getElementById('chart-wordcloud')).setOption({
+        tooltip:{}, series:[{type:'wordCloud',shape:'circle',sizeRange:[16,48],rotationRange:[-30,30],
+            data:words.length>0?words:[{name:'暂无数据',value:1}]}]
+    });
+    window.addEventListener('resize',function(){
+        echarts.getInstanceByDom(document.getElementById('chart-type')).resize();
+        echarts.getInstanceByDom(document.getElementById('chart-wordcloud')).resize();
+    });
+})();
+</script>
+{% endblock %}

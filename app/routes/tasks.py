@@ -142,6 +142,22 @@ def update_status(task_id):
     return redirect(url_for('task.board'))
 
 
+@task_bp.route('/overview')
+@login_required
+def teacher_overview():
+    if current_user.role.name not in ('admin', 'teacher'):
+        return redirect(url_for('task.board'))
+    from sqlalchemy import func as safunc
+    projects = Project.query.all()
+    stats = []
+    for p in projects:
+        tasks_by_status = {}
+        for s in ['todo', 'in_progress', 'to_test', 'done', 'delayed', 'closed']:
+            tasks_by_status[s] = Task.query.filter_by(project_id=p.id, status=s).count()
+        stats.append({'project': p, 'status_counts': tasks_by_status, 'total': sum(tasks_by_status.values())})
+    return render_template('tasks/overview.html', stats=stats)
+
+
 @task_bp.route('/<int:task_id>/delete', methods=['POST'])
 @login_required
 def delete_task(task_id):

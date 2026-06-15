@@ -31,9 +31,11 @@ def create_app(config_name=None):
     from app.routes.crawler import crawler_bp
     from app.routes.ai_records import ai_bp
     from app.routes.dashboard import dashboard_bp
+    from app.routes.announcements import announcement_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(announcement_bp, url_prefix='/announcements')
     app.register_blueprint(project_bp, url_prefix='/projects')
     app.register_blueprint(team_bp, url_prefix='/teams')
     app.register_blueprint(task_bp, url_prefix='/tasks')

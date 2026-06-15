@@ -35,6 +35,9 @@
             <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="首页">
                 <i class="bi bi-speedometer2"></i> <span class="item-text">首页</span>
             </a>
+            <a href="{{ url_for('announcement.list_announcements') }}" class="sidebar-item" data-tooltip="公告">
+                <i class="bi bi-megaphone"></i> <span class="item-text">公告</span>
+            </a>
         </div>
 
         <div class="sidebar-section">
@@ -57,6 +60,11 @@
             <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="任务看板">
                 <i class="bi bi-columns-gap"></i> <span class="item-text">任务看板</span>
             </a>
+            {% if current_user.role.name in ('admin', 'teacher') %}
+            <a href="{{ url_for('task.teacher_overview') }}" class="sidebar-item" data-tooltip="任务总览">
+                <i class="bi bi-bar-chart"></i> <span class="item-text">任务总览</span>
+            </a>
+            {% endif %}
             <a href="{{ url_for('report.list_reports') }}" class="sidebar-item" data-tooltip="日报">
                 <i class="bi bi-journal-text"></i> <span class="item-text">日报</span>
             </a>
