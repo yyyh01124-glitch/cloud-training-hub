@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}评分管理{% endblock %}
+{% block page_title_bar %}评分管理{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 评分管理{% endblock %}
+{% block top_actions %}<a href="{{ url_for('score.create_score') }}" class="btn btn-primary btn-sm">添加评分</a>{% endblock %}
+{% block content %}
+<form class="row g-2 mb-3" method="get">
+    <div class="col-md-4"><select class="form-select form-select-sm" name="project_id" onchange="this.form.submit()"><option value="">全部项目</option>{% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if filter_project == p.id }}>{{ p.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><select class="form-select form-select-sm" name="team_id" onchange="this.form.submit()"><option value="">全部小组</option>{% for t in teams %}<option value="{{ t.id }}" {{ 'selected' if filter_team == t.id }}>{{ t.name }}</option>{% endfor %}</select></div>
+</form>
+<div class="table-card">
+    <table class="table table-hover">
+        <thead><tr><th>项目</th><th>小组</th><th>学生</th><th>评分项</th><th>得分</th><th>满分</th><th>评分人</th><th>时间</th><th>操作</th></tr></thead>
+        <tbody>
+            {% for s in scores.items %}
+            <tr>
+                <td>{{ s.project.name if s.project else '-' }}</td>
+                <td>{{ s.team.name if s.team else '-' }}</td>
+                <td>{{ s.student.real_name if s.student else '小组' }}</td>
+                <td>{{ s.category }}</td>
+                <td><strong>{{ s.score }}</strong></td>
+                <td>{{ s.max_score }}</td>
+                <td>{{ s.scorer.real_name if s.scorer else '-' }}</td>
+                <td>{{ s.created_at.strftime('%m-%d %H:%M') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('score.delete_score', score_id=s.id) }}" class="d-inline" onsubmit="return confirm('确认删除？')">
+                        <button class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="text-center text-muted">暂无评分记录</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination_widget(scores, 'score.list_scores') }}
+</div>
+{% endblock %}

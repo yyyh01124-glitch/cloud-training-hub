@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h3>{{ '编辑' if bug else '提交' }} Bug</h3>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <div class="row">
             <div class="col-md-8 mb-3">
                 <label for="title" class="form-label">Bug 标题</label>

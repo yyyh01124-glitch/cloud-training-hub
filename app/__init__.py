@@ -32,10 +32,12 @@ def create_app(config_name=None):
     from app.routes.ai_records import ai_bp
     from app.routes.dashboard import dashboard_bp
     from app.routes.announcements import announcement_bp
+    from app.routes.scores import score_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(announcement_bp, url_prefix='/announcements')
+    app.register_blueprint(score_bp, url_prefix='/scores')
     app.register_blueprint(project_bp, url_prefix='/projects')
     app.register_blueprint(team_bp, url_prefix='/teams')
     app.register_blueprint(task_bp, url_prefix='/tasks')
@@ -95,6 +97,13 @@ def create_app(config_name=None):
                 'completed': '已完成', 'archived': '已归档'
             },
         }
+
+    # 上传文件访问
+    @app.route('/uploads/<path:filename>')
+    def serve_upload(filename):
+        import os
+        from flask import send_from_directory
+        return send_from_directory(os.path.join(app.root_path, '..', 'uploads'), filename)
 
     return app
 

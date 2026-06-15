@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}添加评分{% endblock %}
+{% block page_title_bar %}添加评分{% endblock %}
+{% block content %}
+<div class="form-card">
+    <form method="post">
+        <div class="row">
+            <div class="col-md-6 mb-3"><label for="project_id" class="form-label">项目</label><select class="form-select" name="project_id" required>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-6 mb-3"><label for="team_id" class="form-label">小组</label><select class="form-select" name="team_id" required>{% for t in teams %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3"><label for="student_id" class="form-label">学生（留空=小组评分）</label><select class="form-select" name="student_id"><option value="">-- 小组整体 --</option>{% for s in students %}<option value="{{ s.id }}">{{ s.real_name }}</option>{% endfor %}</select></div>
+            <div class="col-md-6 mb-3"><label for="category" class="form-label">评分维度</label><input type="text" class="form-control" name="category" placeholder="代码质量/文档/答辩" required></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3"><label for="score" class="form-label">得分</label><input type="number" class="form-control" name="score" step="0.1" required></div>
+            <div class="col-md-4 mb-3"><label for="max_score" class="form-label">满分</label><input type="number" class="form-control" name="max_score" step="0.1" value="100"></div>
+        </div>
+        <div class="mb-3"><label for="comment" class="form-label">评语</label><textarea class="form-control" name="comment" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('score.list_scores') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}
