@@ -38,6 +38,15 @@ services:
     networks:
       - cloudhub-net
 
+  redis:
+    image: redis:6
+    container_name: cloudhub-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - cloudhub-net
+
   nginx:
     image: nginx:latest
     container_name: cloudhub-nginx
