@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}AI 记录详情{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ record.user.real_name }} 的 AI 使用记录</h3>
+    <div class="detail-section"><h5>基本信息</h5><p>工具: {{ record.tool_name }} | 场景: {{ ai_scenes[record.scene_category] }} | 采纳: {{ '是' if record.is_adopted else '否' }} | 修改: {{ '是' if record.has_modified else '否' }}</p></div>
+    <div class="detail-section"><h5>提示词</h5><pre>{{ record.prompt_text }}</pre></div>
+    <div class="detail-section"><h5>AI 输出摘要</h5><pre>{{ record.ai_output_summary }}</pre></div>
+    <div class="detail-section"><h5>修改说明</h5><p>{{ record.modification_note or '无' }}</p></div>
+    <div class="detail-section"><h5>最终效果</h5><p>{{ record.effect_description or '无' }}</p></div>
+    <div class="detail-section"><h5>风险说明</h5><p>{{ record.risk_note or '无' }}</p></div>
+    <div class="d-flex gap-2 mt-3">
+        <a href="{{ url_for('ai.edit_record', record_id=record.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+        <form method="post" action="{{ url_for('ai.delete_record', record_id=record.id) }}" onsubmit="return confirm('确认删除此AI记录？')">
+            <button class="btn btn-outline-danger btn-sm">删除</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

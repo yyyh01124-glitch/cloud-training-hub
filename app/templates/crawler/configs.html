@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}爬虫配置{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>爬虫配置</h3>
+        <a href="{{ url_for('crawler.create_config') }}" class="btn btn-primary btn-sm">新建配置</a>
+    </div>
+    <div class="row">
+        {% for c in configs %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5>{{ c.name }}</h5>
+                    <p class="text-muted small">{{ c.source_url[:60] }}...</p>
+                    <span class="badge bg-info">{{ c.source_type }}</span>
+                    <span class="badge bg-{{ 'success' if c.is_active else 'secondary' }}">{{ '启用' if c.is_active else '停用' }}</span>
+                    <div class="mt-2">
+                        <a href="{{ url_for('crawler.edit_config', config_id=c.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                        <form method="post" action="{{ url_for('crawler.toggle_config', config_id=c.id) }}" class="d-inline"><button class="btn btn-sm btn-outline-warning">{{ '停用' if c.is_active else '启用' }}</button></form>
+                        <form method="post" action="{{ url_for('crawler.run_crawl', config_id=c.id) }}" class="d-inline"><button class="btn btn-sm btn-outline-success">立即采集</button></form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-muted text-center">暂无爬虫配置</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

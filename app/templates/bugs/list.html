@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bug_severity_badge, bug_status_badge, pagination_widget %}
+{% block title %}Bug 管理{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>Bug 管理</h3>
+        <a href="{{ url_for('bug.create_bug') }}" class="btn btn-danger btn-sm">提交 Bug</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+        <div class="col-md-3"><select class="form-select form-select-sm" name="status" onchange="this.form.submit()"><option value="">全部状态</option>{% for k, v in bug_statuses.items() %}<option value="{{ k }}" {{ 'selected' if status_filter == k }}>{{ v }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><select class="form-select form-select-sm" name="severity" onchange="this.form.submit()"><option value="">全部严重程度</option>{% for k, v in bug_severities.items() %}<option value="{{ k }}" {{ 'selected' if severity_filter == k }}>{{ v }}</option>{% endfor %}</select></div>
+    </form>
+    <div class="table-card">
+        <table class="table table-hover">
+            <thead><tr><th>标题</th><th>模块</th><th>严重程度</th><th>状态</th><th>提出人</th><th>负责人</th><th>创建时间</th></tr></thead>
+            <tbody>
+                {% for b in bugs.items %}
+                <tr>
+                    <td><a href="{{ url_for('bug.bug_detail', bug_id=b.id) }}">{{ b.title }}</a></td>
+                    <td>{{ b.module }}</td>
+                    <td>{{ bug_severity_badge(b.severity) }}</td>
+                    <td>{{ bug_status_badge(b.status) }}</td>
+                    <td>{{ b.reporter.real_name }}</td>
+                    <td>{{ b.assignee.real_name if b.assignee else '-' }}</td>
+                    <td>{{ b.created_at.strftime('%m-%d') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">暂无 Bug</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% from "_macros.html" import pagination_widget %}
+        {{ pagination_widget(bugs, 'bug.list_bugs') }}
+    </div>
+</div>
+{% endblock %}

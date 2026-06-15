@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import task_status_badge, priority_badge %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>{{ task.title }}</h3>
+        <a href="{{ url_for('task.edit_task', task_id=task.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="detail-section">
+                <h5>描述</h5>
+                <p>{{ task.description or '暂无描述' }}</p>
+            </div>
+            <div class="detail-section">
+                <h5>完成说明</h5>
+                <p>{{ task.completion_note or '暂无' }}</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="detail-section">
+                <h5>详情</h5>
+                <p>状态: {{ task_status_badge(task.status) }}</p>
+                <p>优先级: {{ priority_badge(task.priority) }}</p>
+                <p>负责人: {{ task.assignee.real_name if task.assignee else '未分配' }}</p>
+                <p>小组: {{ task.team.name if task.team else '未分配' }}</p>
+                <p>预计工时: {{ task.estimated_hours }}h | 实际工时: {{ task.actual_hours }}h</p>
+                <p>开始: {{ task.start_date or '-' }} | 截止: {{ task.due_date or '-' }}</p>
+                <p class="text-muted small">创建: {{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

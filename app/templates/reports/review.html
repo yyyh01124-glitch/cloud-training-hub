@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}点评日报{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>点评日报 - {{ report.user.real_name }} ({{ report.report_date }})</h3>
+    <form method="post">
+        <div class="mb-3">
+            <label for="teacher_comment" class="form-label">教师点评</label>
+            <textarea class="form-control" id="teacher_comment" name="teacher_comment" rows="4">{{ report.teacher_comment if report else '' }}</textarea>
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="is_excellent" name="is_excellent" {{ 'checked' if report.is_excellent }}>
+            <label class="form-check-label" for="is_excellent">标记为优秀日报</label>
+        </div>
+        <button type="submit" class="btn btn-primary">保存点评</button>
+        <a href="{{ url_for('report.report_detail', report_id=report.id) }}" class="btn btn-secondary">返回</a>
+    </form>
+</div>
+{% endblock %}

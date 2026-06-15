@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if record else '记录' }} AI 使用{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if record else '记录' }} AI 使用</h3>
+    <form method="post">
+        <div class="row">
+            <div class="col-md-6 mb-3"><label for="tool_name" class="form-label">AI 工具名称</label><input type="text" class="form-control" id="tool_name" name="tool_name" value="{{ record.tool_name if record else '' }}" required placeholder="通义灵码、豆包、ChatGPT..."></div>
+            <div class="col-md-6 mb-3"><label for="scene_category" class="form-label">使用场景</label><select class="form-select" id="scene_category" name="scene_category">{% for k, v in ai_scenes.items() %}<option value="{{ k }}" {{ 'selected' if record and record.scene_category == k }}>{{ v }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="mb-3"><label for="scene" class="form-label">具体场景描述</label><input type="text" class="form-control" id="scene" name="scene" value="{{ record.scene if record else '' }}"></div>
+        <div class="mb-3"><label for="prompt_text" class="form-label">输入提示词</label><textarea class="form-control" id="prompt_text" name="prompt_text" rows="4">{{ record.prompt_text if record else '' }}</textarea></div>
+        <div class="mb-3"><label for="ai_output_summary" class="form-label">AI 返回结果摘要</label><textarea class="form-control" id="ai_output_summary" name="ai_output_summary" rows="4">{{ record.ai_output_summary if record else '' }}</textarea></div>
+        <div class="row">
+            <div class="col-md-6 mb-3"><label for="effect_description" class="form-label">最终解决效果</label><textarea class="form-control" id="effect_description" name="effect_description" rows="2">{{ record.effect_description if record else '' }}</textarea></div>
+            <div class="col-md-6 mb-3"><label for="modification_note" class="form-label">人工修改说明</label><textarea class="form-control" id="modification_note" name="modification_note" rows="2">{{ record.modification_note if record else '' }}</textarea></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3"><div class="form-check"><input type="checkbox" class="form-check-input" id="is_adopted" name="is_adopted" {{ 'checked' if not record or record.is_adopted }}><label class="form-check-label" for="is_adopted">是否直接采用</label></div></div>
+            <div class="col-md-4 mb-3"><div class="form-check"><input type="checkbox" class="form-check-input" id="has_modified" name="has_modified" {{ 'checked' if record and record.has_modified }}><label class="form-check-label" for="has_modified">是否进行修改</label></div></div>
+            <div class="col-md-4 mb-3"><label for="related_files" class="form-label">相关代码文件</label><input type="text" class="form-control" id="related_files" name="related_files" value="{{ record.related_files if record else '' }}"></div>
+        </div>
+        <div class="mb-3"><label for="risk_note" class="form-label">风险说明</label><textarea class="form-control" id="risk_note" name="risk_note" rows="2">{{ record.risk_note if record else '' }}</textarea></div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('ai.list_records') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

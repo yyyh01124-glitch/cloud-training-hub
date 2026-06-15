@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}云智实训管理平台{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+
+<button class="menu-toggle" onclick="toggleMobileSidebar()" aria-label="菜单">
+    <i class="bi bi-list"></i>
+</button>
+<div class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+    <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="收起菜单">
+        <i class="bi bi-chevron-left" id="collapse-icon"></i>
+    </button>
+
+    <div class="sidebar-brand">
+        <a href="{{ url_for('dashboard.index') }}">
+            <span class="logo-icon"><i class="bi bi-cloud-fill"></i></span>
+            <span class="brand-text">Cloud Training Hub</span>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">主菜单</div>
+            <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="首页">
+                <i class="bi bi-speedometer2"></i> <span class="item-text">首页</span>
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">项目管理</div>
+            <a href="{{ url_for('project.list_projects') }}" class="sidebar-item" data-tooltip="项目列表">
+                <i class="bi bi-kanban"></i> <span class="item-text">项目列表</span>
+            </a>
+            {% if current_user.role.name in ('admin', 'teacher') %}
+            <a href="{{ url_for('project.list_courses') }}" class="sidebar-item" data-tooltip="课程管理">
+                <i class="bi bi-book"></i> <span class="item-text">课程管理</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('team.list_teams') }}" class="sidebar-item" data-tooltip="小组管理">
+                <i class="bi bi-people"></i> <span class="item-text">小组管理</span>
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">工作区</div>
+            <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="任务看板">
+                <i class="bi bi-columns-gap"></i> <span class="item-text">任务看板</span>
+            </a>
+            <a href="{{ url_for('report.list_reports') }}" class="sidebar-item" data-tooltip="日报">
+                <i class="bi bi-journal-text"></i> <span class="item-text">日报</span>
+            </a>
+            <a href="{{ url_for('bug.list_bugs') }}" class="sidebar-item" data-tooltip="Bug 管理">
+                <i class="bi bi-bug"></i> <span class="item-text">Bug 管理</span>
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">工具</div>
+            <a href="{{ url_for('crawler.data_list') }}" class="sidebar-item" data-tooltip="爬虫数据">
+                <i class="bi bi-database"></i> <span class="item-text">爬虫数据</span>
+            </a>
+            <a href="{{ url_for('ai.list_records') }}" class="sidebar-item" data-tooltip="AI 记录">
+                <i class="bi bi-robot"></i> <span class="item-text">AI 记录</span>
+            </a>
+        </div>
+
+        {% if current_user.role.name == 'admin' %}
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">系统管理</div>
+            <a href="{{ url_for('admin.users') }}" class="sidebar-item" data-tooltip="用户管理">
+                <i class="bi bi-person-badge"></i> <span class="item-text">用户管理</span>
+            </a>
+            <a href="{{ url_for('admin.logs') }}" class="sidebar-item" data-tooltip="登录日志">
+                <i class="bi bi-shield-check"></i> <span class="item-text">登录日志</span>
+            </a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.profile') }}" class="sidebar-user">
+            <div class="user-avatar">{{ current_user.real_name[0] }}</div>
+            <div class="user-info">
+                <div class="user-name">{{ current_user.real_name }}</div>
+                <div class="user-role">{{ roles[current_user.role.name] }}</div>
+            </div>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-item mt-2" data-tooltip="退出登录">
+            <i class="bi bi-box-arrow-right"></i> <span class="item-text">退出登录</span>
+        </a>
+    </div>
+</aside>
+{% endif %}
+
+<div class="{% if current_user.is_authenticated %}main-content{% endif %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block page_header %}
+    {% if self.page_title_bar() %}
+    <div class="top-bar">
+        <div class="page-info">
+            <h3>{% block page_title_bar %}{% endblock %}</h3>
+            {% if self.breadcrumb() %}
+            <div class="breadcrumb-row">{% block breadcrumb %}{% endblock %}</div>
+            {% endif %}
+        </div>
+        {% if self.top_actions() %}
+        <div class="top-actions">{% block top_actions %}{% endblock %}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+// ---- Sidebar ----
+
+function toggleSidebar() {
+    var sb = document.getElementById('sidebar');
+    var icon = document.getElementById('collapse-icon');
+    sb.classList.toggle('collapsed');
+    if (sb.classList.contains('collapsed')) {
+        icon.classList.replace('bi-chevron-left', 'bi-chevron-right');
+    } else {
+        icon.classList.replace('bi-chevron-right', 'bi-chevron-left');
+    }
+    localStorage.setItem('sidebar-collapsed', sb.classList.contains('collapsed'));
+}
+
+// Restore sidebar state
+(function() {
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+        var sb = document.getElementById('sidebar');
+        if (sb) {
+            sb.classList.add('collapsed');
+            document.getElementById('collapse-icon').classList.replace('bi-chevron-left', 'bi-chevron-right');
+        }
+    }
+})();
+
+// Active sidebar item
+(function() {
+    var path = window.location.pathname;
+    var items = document.querySelectorAll('.sidebar-item');
+    var best = null, bestLen = 0;
+    items.forEach(function(item) {
+        var href = item.getAttribute('href');
+        if (href && path.startsWith(href) && href.length > bestLen && href !== '/') {
+            best = item; bestLen = href.length;
+        }
+    });
+    if (!best) {
+        items.forEach(function(item) {
+            if (item.getAttribute('href') === '/') best = item;
+        });
+    }
+    if (best) best.classList.add('active');
+})();
+
+// ---- Mobile ----
+
+function toggleMobileSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.querySelector('.sidebar-overlay').classList.toggle('show');
+}
+
+// ---- Animated number counter ----
+
+function animateCounters() {
+    document.querySelectorAll('.stat-value[data-target]').forEach(function(el) {
+        var target = parseInt(el.dataset.target);
+        var duration = 800;
+        var start = performance.now();
+
+        function tick(now) {
+            var elapsed = now - start;
+            var progress = Math.min(elapsed / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3); // ease-out
+            var current = Math.round(target * eased);
+            el.textContent = current;
+            if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add data-target to stat values for animation
+    document.querySelectorAll('.stat-value').forEach(function(el) {
+        var num = parseInt(el.textContent);
+        if (!isNaN(num)) {
+            el.dataset.target = el.textContent;
+            el.textContent = '0';
+        }
+    });
+    // Delay to let page render, then animate
+    setTimeout(animateCounters, 150);
+});
+
+// ---- Kanban drag-drop enhancements ----
+
+document.addEventListener('DOMContentLoaded', function() {
+    var cards = document.querySelectorAll('.kanban-card');
+    var columns = document.querySelectorAll('.kanban-column');
+
+    cards.forEach(function(card) {
+        card.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.dataset.taskId);
+            this.classList.add('dragging');
+        });
+        card.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            columns.forEach(function(c) { c.classList.remove('drag-over'); });
+        });
+    });
+
+    columns.forEach(function(col) {
+        col.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+        col.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            var taskId = e.dataTransfer.getData('text/plain');
+            var newStatus = this.dataset.status;
+            var card = document.querySelector('.kanban-card[data-task-id="' + taskId + '"]');
+
+            fetch('/tasks/' + taskId + '/status', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: newStatus})
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.ok) {
+                    if (card) {
+                        card.classList.add('dropped');
+                        setTimeout(function() {
+                            var targetList = col.querySelectorAll('.kanban-card');
+                            if (targetList.length > 0) {
+                                col.insertBefore(card, targetList[0]);
+                            } else {
+                                col.appendChild(card);
+                            }
+                            card.classList.remove('dropped');
+                            // Update column counts
+                            updateKanbanCounts();
+                        }, 350);
+                    }
+                }
+            });
+        });
+    });
+
+    function updateKanbanCounts() {
+        columns.forEach(function(col) {
+            var badge = col.querySelector('.kanban-column-header .badge.rounded-pill');
+            if (badge) {
+                badge.textContent = col.querySelectorAll('.kanban-card').length;
+            }
+        });
+    }
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

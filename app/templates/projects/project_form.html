@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if project else '创建' }}项目{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if project else '创建' }}项目</h3>
+    <form method="post">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="name" class="form-label">项目名称</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ project.name if project else '' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="course_id" class="form-label">所属课程</label>
+                <select class="form-select" id="course_id" name="course_id" required>
+                    {% for c in courses %}
+                    <option value="{{ c.id }}" {{ 'selected' if project and project.course_id == c.id }}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">项目简介</label>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ project.description if project else '' }}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="leader_id" class="form-label">负责人</label>
+                <select class="form-select" id="leader_id" name="leader_id">
+                    <option value="">选择负责人</option>
+                    {% for t in teachers %}
+                    <option value="{{ t.id }}" {{ 'selected' if project and project.leader_id == t.id }}>{{ t.real_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="status" class="form-label">状态</label>
+                <select class="form-select" id="status" name="status">
+                    {% for k, v in project_statuses.items() %}
+                    <option value="{{ k }}" {{ 'selected' if project and project.status == k }}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="tech_stack" class="form-label">技术栈</label>
+                <input type="text" class="form-control" id="tech_stack" name="tech_stack" value="{{ project.tech_stack if project else '' }}" placeholder="Flask, MySQL, Docker...">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="start_date" class="form-label">开始日期</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ project.start_date if project else '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="end_date" class="form-label">结束日期</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ project.end_date if project else '' }}">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="deploy_url" class="form-label">部署地址</label>
+                <input type="url" class="form-control" id="deploy_url" name="deploy_url" value="{{ project.deploy_url if project else '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="git_repo_url" class="form-label">Git仓库</label>
+                <input type="url" class="form-control" id="git_repo_url" name="git_repo_url" value="{{ project.git_repo_url if project else '' }}">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('project.list_projects') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

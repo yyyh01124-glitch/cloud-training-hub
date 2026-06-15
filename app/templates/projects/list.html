@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}项目列表{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>项目列表</h3>
+        {% if current_user.role.name in ('admin', 'teacher') %}
+        <div>
+            <a href="{{ url_for('project.list_courses') }}" class="btn btn-outline-secondary btn-sm">课程管理</a>
+            <a href="{{ url_for('project.create_project') }}" class="btn btn-primary btn-sm">新建项目</a>
+        </div>
+        {% endif %}
+    </div>
+    <form class="row g-2 mb-3" method="get">
+        <div class="col-md-4">
+            <select class="form-select" name="status" onchange="this.form.submit()">
+                <option value="">全部状态</option>
+                {% for k, v in project_statuses.items() %}
+                <option value="{{ k }}" {{ 'selected' if status_filter == k }}>{{ v }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+    <div class="row">
+        {% for p in projects.items %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5><a href="{{ url_for('project.project_detail', project_id=p.id) }}">{{ p.name }}</a></h5>
+                    <p class="text-muted small">{{ p.description[:80] if p.description else '' }}</p>
+                    <span class="badge bg-{{ 'success' if p.status == 'completed' else 'primary' if p.status == 'in_progress' else 'secondary' }}">{{ project_statuses[p.status] }}</span>
+                    {% if p.deploy_url %}<a href="{{ p.deploy_url }}" target="_blank" class="btn btn-sm btn-outline-success">部署地址</a>{% endif %}
+                </div>
+                {% if current_user.role.name in ('admin', 'teacher') %}
+                <div class="card-footer bg-transparent border-top-0 pt-0 d-flex gap-2">
+                    <a href="{{ url_for('project.project_detail', project_id=p.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+                    <a href="{{ url_for('project.edit_project', project_id=p.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                    <form method="post" action="{{ url_for('project.delete_project', project_id=p.id) }}" onsubmit="return confirm('确认删除【{{ p.name }}】？小组和任务也将被删除。')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5">暂无项目</div>
+        {% endfor %}
+    </div>
+    {% from "_macros.html" import pagination_widget %}
+    {{ pagination_widget(projects, 'project.list_projects') }}
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}日报统计{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>日报提交统计</h3>
+    <div class="table-card">
+        <table class="table">
+            <thead><tr><th>学生</th><th>提交次数</th></tr></thead>
+            <tbody>
+                {% for s in stats_data %}
+                <tr><td>{{ s.name }}</td><td>{{ s.count }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

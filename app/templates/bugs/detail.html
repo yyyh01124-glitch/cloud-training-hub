@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bug_severity_badge, bug_status_badge %}
+{% block title %}{{ bug.title }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>{{ bug.title }}</h3>
+        <div>
+            <a href="{{ url_for('bug.edit_bug', bug_id=bug.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+            {% if current_user.role.name in ('admin','teacher') %}
+            <form method="post" action="{{ url_for('bug.delete_bug', bug_id=bug.id) }}" class="d-inline" onsubmit="return confirm('确认删除？')"><button class="btn btn-outline-danger btn-sm">删除</button></form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="detail-section"><h5>描述</h5><p>{{ bug.description }}</p></div>
+            <div class="detail-section"><h5>复现步骤</h5><pre>{{ bug.repro_steps }}</pre></div>
+            <div class="detail-section"><h5>解决方案</h5><p>{{ bug.solution or '暂无' }}</p></div>
+        </div>
+        <div class="col-md-4">
+            <div class="detail-section">
+                <h5>详情</h5>
+                <p>严重程度: {{ bug_severity_badge(bug.severity) }}</p>
+                <p>状态: {{ bug_status_badge(bug.status) }}</p>
+                <p>模块: {{ bug.module }}</p>
+                <p>提出人: {{ bug.reporter.real_name }}</p>
+                <p>负责人: {{ bug.assignee.real_name if bug.assignee else '未分配' }}</p>
+                <p>创建: {{ bug.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if bug.closed_at %}<p>关闭: {{ bug.closed_at.strftime('%Y-%m-%d %H:%M') }}</p>{% endif %}
+            </div>
+            <div class="detail-section">
+                <h5>状态操作</h5>
+                {% set transitions = {'new': ['confirmed','wontfix'], 'confirmed': ['fixing','wontfix'], 'fixing': ['fixed','wontfix'], 'fixed': ['closed']} %}
+                {% if bug.status in transitions and transitions[bug.status] %}
+                {% for s in transitions[bug.status] %}
+                <form method="post" action="{{ url_for('bug.update_status', bug_id=bug.id) }}" class="d-inline">
+                    <input type="hidden" name="status" value="{{ s }}">
+                    <button class="btn btn-sm btn-outline-info mb-1">{{ bug_statuses[s] }}</button>
+                </form>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

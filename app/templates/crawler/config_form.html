@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if config else '新建' }}爬虫配置{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if config else '新建' }}爬虫配置</h3>
+    <div class="form-card">
+        <form method="post">
+            <div class="mb-3"><label for="name" class="form-label">任务名称</label><input type="text" class="form-control" id="name" name="name" value="{{ config.name if config else '' }}" required></div>
+            <div class="mb-3"><label for="source_url" class="form-label">数据源 URL</label><input type="url" class="form-control" id="source_url" name="source_url" value="{{ config.source_url if config else '' }}" required></div>
+            <div class="row"><div class="col-md-6 mb-3"><label for="source_type" class="form-label">数据源类型</label><select class="form-select" id="source_type" name="source_type"><option value="tech_article" {{ 'selected' if not config or config.source_type == 'tech_article' }}>技术文章</option><option value="job" {{ 'selected' if config and config.source_type == 'job' }}>招聘岗位</option><option value="opensource" {{ 'selected' if config and config.source_type == 'opensource' }}>开源项目</option><option value="other" {{ 'selected' if config and config.source_type == 'other' }}>其他</option></select></div>
+            <div class="col-md-6 mb-3"><label for="keywords" class="form-label">关键词 (逗号分隔)</label><input type="text" class="form-control" id="keywords" name="keywords" value="{{ config.keywords if config else '' }}"></div></div>
+            <div class="row"><div class="col-md-8 mb-3"><label for="cron_expr" class="form-label">定时表达式 (可选)</label><input type="text" class="form-control" id="cron_expr" name="cron_expr" value="{{ config.cron_expr if config else '' }}" placeholder="*/30 * * * *"></div>
+            <div class="col-md-4 mb-3"><label for="request_interval" class="form-label">请求间隔(秒)</label><input type="number" class="form-control" id="request_interval" name="request_interval" value="{{ config.request_interval if config else 3 }}"></div></div>
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a href="{{ url_for('crawler.list_configs') }}" class="btn btn-secondary">取消</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

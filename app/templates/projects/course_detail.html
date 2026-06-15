@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>{{ course.name }}</h3>
+        <div>
+            <a href="{{ url_for('project.edit_course', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+            <a href="{{ url_for('project.create_project') }}" class="btn btn-success btn-sm">新建项目</a>
+            <form method="post" action="{{ url_for('project.delete_course', course_id=course.id) }}" class="d-inline" onsubmit="return confirm('确认删除此课程？将同时删除所有关联项目。')">
+                <button type="submit" class="btn btn-outline-danger btn-sm">删除</button>
+            </form>
+        </div>
+    </div>
+    <p class="text-muted">{{ course.description }}</p>
+    <p>教师: {{ course.teacher.real_name if course.teacher else '-' }} | {{ course.start_date }} ~ {{ course.end_date }}</p>
+
+    <h5 class="mt-4">项目列表</h5>
+    <div class="row">
+        {% for p in projects %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6><a href="{{ url_for('project.project_detail', project_id=p.id) }}">{{ p.name }}</a></h6>
+                    <span class="badge bg-{{ 'success' if p.status == 'completed' else 'primary' }}">{{ project_statuses[p.status] }}</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-muted">暂无项目</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

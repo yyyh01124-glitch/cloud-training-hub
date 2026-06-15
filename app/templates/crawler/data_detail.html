@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.title }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ entry.title }}</h3>
+    <div class="detail-section"><h5>摘要</h5><p>{{ entry.summary or '无' }}</p></div>
+    <div class="detail-section"><h5>原始数据</h5><pre>{{ entry.raw_data or '{}' }}</pre></div>
+    <p>类型: {{ entry.source_type }} | 关键词: {{ entry.keywords_matched }} | {{ entry.pub_date }}</p>
+    {% if entry.url %}<a href="{{ entry.url }}" target="_blank" class="btn btn-outline-success">查看原文</a>{% endif %}
+</div>
+{% endblock %}

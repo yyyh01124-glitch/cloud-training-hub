@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}课程管理{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>课程管理</h3>
+        <a href="{{ url_for('project.create_course') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 新增课程</a>
+    </div>
+    <div class="row">
+        {% for c in courses.items %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{{ url_for('project.course_detail', course_id=c.id) }}">{{ c.name }}</a></h5>
+                    <p class="card-text text-muted small">{{ c.description[:100] if c.description else '' }}</p>
+                    <p class="small mb-1">教师: {{ c.teacher.real_name if c.teacher else '-' }}</p>
+                    <span class="badge bg-{{ 'success' if c.is_active else 'secondary' }}">{{ '进行中' if c.is_active else '已结课' }}</span>
+                </div>
+                {% if current_user.role.name in ('admin', 'teacher') %}
+                <div class="card-footer bg-transparent border-top-0 pt-0 d-flex gap-2">
+                    <a href="{{ url_for('project.course_detail', course_id=c.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+                    <a href="{{ url_for('project.edit_course', course_id=c.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                    <form method="post" action="{{ url_for('project.delete_course', course_id=c.id) }}" onsubmit="return confirm('确认删除【{{ c.name }}】？关联项目也将被删除。')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5">暂无课程</div>
+        {% endfor %}
+    </div>
+    {% from "_macros.html" import pagination_widget %}
+    {{ pagination_widget(courses, 'project.list_courses') }}
+</div>
+{% endblock %}

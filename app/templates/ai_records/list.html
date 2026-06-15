@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}AI 使用记录{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>AI 使用记录</h3>
+        <a href="{{ url_for('ai.create_record') }}" class="btn btn-primary btn-sm">记录 AI 使用</a>
+    </div>
+    <div class="table-card">
+        <table class="table table-hover">
+            <thead><tr><th>时间</th><th>使用者</th><th>工具</th><th>场景</th><th>采纳</th><th>修改</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for r in records.items %}
+                <tr>
+                    <td>{{ r.created_at.strftime('%m-%d %H:%M') }}</td>
+                    <td>{{ r.user.real_name }}</td>
+                    <td>{{ r.tool_name }}</td>
+                    <td><span class="badge bg-info">{{ ai_scenes[r.scene_category] }}</span></td>
+                    <td>{{ '是' if r.is_adopted else '否' }}</td>
+                    <td>{{ '是' if r.has_modified else '否' }}</td>
+                    <td>
+                        <a href="{{ url_for('ai.record_detail', record_id=r.id) }}" class="btn btn-sm btn-outline-primary">查看</a>
+                        <form method="post" action="{{ url_for('ai.delete_record', record_id=r.id) }}" class="d-inline" onsubmit="return confirm('确认删除此AI记录？')">
+                            <button class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">暂无记录</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% from "_macros.html" import pagination_widget %}
+        {{ pagination_widget(records, 'ai.list_records') }}
+    </div>
+</div>
+{% endblock %}

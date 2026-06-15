@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if report else '写日报' }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if report else '写日报' }}</h3>
+    <form method="post">
+        <div class="mb-3">
+            <label for="completed_content" class="form-label">今日完成内容</label>
+            <textarea class="form-control" id="completed_content" name="completed_content" rows="4" required>{{ report.completed_content if report else '' }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="problems_encountered" class="form-label">遇到的问题</label>
+            <textarea class="form-control" id="problems_encountered" name="problems_encountered" rows="3">{{ report.problems_encountered if report else '' }}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="ai_tools_used" class="form-label">使用的 AI 工具</label>
+                <input type="text" class="form-control" id="ai_tools_used" name="ai_tools_used" value="{{ report.ai_tools_used if report else '' }}" placeholder="通义灵码、豆包...">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="code_commits" class="form-label">代码提交记录</label>
+                <input type="text" class="form-control" id="code_commits" name="code_commits" value="{{ report.code_commits if report else '' }}">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="ai_help_summary" class="form-label">AI 帮助解决了什么问题</label>
+            <textarea class="form-control" id="ai_help_summary" name="ai_help_summary" rows="2">{{ report.ai_help_summary if report else '' }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="next_day_plan" class="form-label">明日计划</label>
+            <textarea class="form-control" id="next_day_plan" name="next_day_plan" rows="2">{{ report.next_day_plan if report else '' }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="self_score" class="form-label">自评完成度 (1-5)</label>
+            <input type="range" class="form-range" id="self_score" name="self_score" min="1" max="5" value="{{ report.self_score if report else 3 }}" oninput="this.nextElementSibling.value=this.value">
+            <output>{{ report.self_score if report else 3 }}</output>
+        </div>
+        <button type="submit" class="btn btn-primary">提交</button>
+        <a href="{{ url_for('report.list_reports') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

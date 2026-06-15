@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}个人信息 - 云智实训{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>个人信息</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="detail-section">
+                <h5>基本资料</h5>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">角色</label>
+                        <input type="text" class="form-control" value="{{ roles[current_user.role.name] }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="real_name" class="form-label">真实姓名</label>
+                        <input type="text" class="form-control" id="real_name" name="real_name" value="{{ current_user.real_name }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">手机号</label>
+                        <input type="text" class="form-control" id="phone" name="phone" value="{{ current_user.phone }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-section">
+                <h5>安全信息</h5>
+                <p>上次登录: {{ current_user.last_login_at.strftime('%Y-%m-%d %H:%M') if current_user.last_login_at else '暂无' }}</p>
+                <p>上次登录IP: {{ current_user.last_login_ip or '暂无' }}</p>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-warning">修改密码</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

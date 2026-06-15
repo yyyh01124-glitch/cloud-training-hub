@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑课程' if course else '新增课程' }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑课程' if course else '新增课程' }}</h3>
+    <div class="form-card">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">课程名称</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ course.name if course else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">课程简介</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ course.description if course else '' }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="teacher_id" class="form-label">负责教师</label>
+                <select class="form-select" id="teacher_id" name="teacher_id">
+                    <option value="">选择教师</option>
+                    {% for t in teachers %}
+                    <option value="{{ t.id }}" {{ 'selected' if course and course.teacher_id == t.id }}>{{ t.real_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="start_date" class="form-label">开课日期</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ course.start_date if course else '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="end_date" class="form-label">结课日期</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ course.end_date if course else '' }}">
+                </div>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {{ 'checked' if not course or course.is_active }}>
+                <label class="form-check-label" for="is_active">启用课程</label>
+            </div>
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a href="{{ url_for('project.list_courses') }}" class="btn btn-secondary">取消</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

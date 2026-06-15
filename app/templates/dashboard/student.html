@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import task_status_badge, priority_badge %}
+{% block title %}我的首页{% endblock %}
+{% block page_title_bar %}我的实训概览{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 我的概览{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h3>我的实训概览</h3>
+    <p>你好，{{ current_user.real_name }}</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-blue">
+            <div class="stat-value">{{ my_tasks_total }}</div>
+            <div class="stat-label">我的任务</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-green">
+            <div class="stat-value">{{ my_tasks_done }}</div>
+            <div class="stat-label">已完成</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-amber">
+            <div class="stat-value">{{ my_reports }}</div>
+            <div class="stat-label">日报数</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-teal">
+            <div class="stat-value">{{ my_ai }}</div>
+            <div class="stat-label">AI 使用记录</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-section">
+    <h5>我的待办任务</h5>
+    {% if my_tasks %}
+    <table class="table">
+        <thead><tr><th>任务</th><th>状态</th><th>优先级</th><th>截止</th></tr></thead>
+        <tbody>
+            {% for t in my_tasks %}
+            <tr>
+                <td><a href="{{ url_for('task.task_detail', task_id=t.id) }}">{{ t.title }}</a></td>
+                <td>{{ task_status_badge(t.status) }}</td>
+                <td>{{ priority_badge(t.priority) }}</td>
+                <td>{{ t.due_date or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">暂无任务，去<a href="{{ url_for('task.board') }}">任务看板</a>看看吧</p>
+    {% endif %}
+</div>
+{% endblock %}

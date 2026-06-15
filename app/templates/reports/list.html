@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}日报列表{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>日报</h3>
+        <a href="{{ url_for('report.create_report') }}" class="btn btn-primary">写日报</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+        <div class="col-md-3"><select class="form-select form-select-sm" name="team_id" onchange="this.form.submit()"><option value="">全部小组</option>{% for t in teams %}<option value="{{ t.id }}" {{ 'selected' if team_filter == t.id }}>{{ t.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><input type="date" class="form-control form-control-sm" name="date" value="{{ date_filter }}" onchange="this.form.submit()"></div>
+    </form>
+    <div class="table-card">
+        <table class="table table-hover">
+            <thead><tr><th>日期</th><th>学生</th><th>小组</th><th>完成内容</th><th>自评</th><th>教师点评</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for r in reports.items %}
+                <tr>
+                    <td>{{ r.report_date }}</td>
+                    <td>{{ r.user.real_name }}</td>
+                    <td>{{ r.team.name if r.team else '-' }}</td>
+                    <td><small>{{ (r.completed_content or '')[:50] }}</small></td>
+                    <td>{{ r.self_score }}/5</td>
+                    <td><small>{{ (r.teacher_comment or '')[:30] }}</small></td>
+                    <td>
+                        <a href="{{ url_for('report.report_detail', report_id=r.id) }}" class="btn btn-sm btn-outline-primary">查看</a>
+                        <form method="post" action="{{ url_for('report.delete_report', report_id=r.id) }}" class="d-inline" onsubmit="return confirm('确认删除此日报？')">
+                            <button class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">暂无日报</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% from "_macros.html" import pagination_widget %}
+        {{ pagination_widget(reports, 'report.list_reports') }}
+    </div>
+</div>
+{% endblock %}

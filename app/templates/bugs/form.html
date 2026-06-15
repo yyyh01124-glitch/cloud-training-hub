@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if bug else '提交' }} Bug{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if bug else '提交' }} Bug</h3>
+    <form method="post">
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label for="title" class="form-label">Bug 标题</label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ bug.title if bug else '' }}" required>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="severity" class="form-label">严重程度</label>
+                <select class="form-select" id="severity" name="severity">
+                    {% for k, v in bug_severities.items() %}
+                    <option value="{{ k }}" {{ 'selected' if bug and bug.severity == k }}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="module" class="form-label">所属模块</label>
+                <input type="text" class="form-control" id="module" name="module" value="{{ bug.module if bug else '' }}" placeholder="登录/任务/日报...">
+            </div>
+        </div>
+        <div class="mb-3"><label for="description" class="form-label">描述</label><textarea class="form-control" id="description" name="description" rows="3">{{ bug.description if bug else '' }}</textarea></div>
+        <div class="mb-3"><label for="repro_steps" class="form-label">复现步骤</label><textarea class="form-control" id="repro_steps" name="repro_steps" rows="3">{{ bug.repro_steps if bug else '' }}</textarea></div>
+        <div class="row"><div class="col-md-6 mb-3"><label for="expected_result" class="form-label">期望结果</label><textarea class="form-control" id="expected_result" name="expected_result" rows="2">{{ bug.expected_result if bug else '' }}</textarea></div><div class="col-md-6 mb-3"><label for="actual_result" class="form-label">实际结果</label><textarea class="form-control" id="actual_result" name="actual_result" rows="2">{{ bug.actual_result if bug else '' }}</textarea></div></div>
+        {% if bug %}
+        <div class="row"><div class="col-md-4 mb-3"><label for="status" class="form-label">状态</label><select class="form-select" id="status" name="status">{% for k, v in bug_statuses.items() %}<option value="{{ k }}" {{ 'selected' if bug.status == k }}>{{ v }}</option>{% endfor %}</select></div>
+        <div class="col-md-8 mb-3"><label for="solution" class="form-label">解决方案</label><textarea class="form-control" id="solution" name="solution" rows="2">{{ bug.solution if bug else '' }}</textarea></div></div>
+        {% endif %}
+        <div class="mb-3"><label for="assignee_id" class="form-label">指派给</label><select class="form-select" id="assignee_id" name="assignee_id"><option value="">选择负责人</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if bug and bug.assignee_id == u.id }}>{{ u.real_name }} ({{ u.role.display_name }})</option>{% endfor %}</select></div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('bug.list_bugs') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

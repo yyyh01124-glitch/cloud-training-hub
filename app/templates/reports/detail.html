@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}日报详情{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ report.user.real_name }} - {{ report.report_date }} 日报</h3>
+    <div class="detail-section"><h5>今日完成</h5><p>{{ report.completed_content or '无' }}</p></div>
+    <div class="detail-section"><h5>遇到的问题</h5><p>{{ report.problems_encountered or '无' }}</p></div>
+    <div class="detail-section"><h5>AI 工具使用</h5><p>{{ report.ai_tools_used or '无' }}</p><p>{{ report.ai_help_summary or '' }}</p></div>
+    <div class="detail-section"><h5>明日计划</h5><p>{{ report.next_day_plan or '无' }}</p></div>
+    <div class="detail-section"><h5>教师点评</h5><p>{{ report.teacher_comment or '暂无点评' }}</p>{% if report.is_excellent %}<span class="badge bg-warning">优秀日报</span>{% endif %}</div>
+    <div class="d-flex gap-2 mt-3">
+        <a href="{{ url_for('report.edit_report', report_id=report.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+        {% if current_user.role.name in ('admin','teacher') %}
+        <a href="{{ url_for('report.review_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm">点评</a>
+        {% endif %}
+        <form method="post" action="{{ url_for('report.delete_report', report_id=report.id) }}" onsubmit="return confirm('确认删除此日报？')">
+            <button class="btn btn-outline-danger btn-sm">删除</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

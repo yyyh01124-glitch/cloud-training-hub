@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}数据驾驶舱{% endblock %}
+{% block page_title_bar %}数据驾驶舱{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 数据驾驶舱{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-blue">
+            <div class="stat-value">{{ projects|length }}</div>
+            <div class="stat-label">项目总数</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-green">
+            <div class="stat-value">{{ tasks_done }}</div>
+            <div class="stat-label">已完成任务</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-amber">
+            <div class="stat-value">{{ tasks_delayed }}</div>
+            <div class="stat-label">已延期任务</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-card bg-red">
+            <div class="stat-value">{{ bugs_open }}</div>
+            <div class="stat-label">未解决 Bug</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-box">
+            <div class="chart-title">任务状态分布</div>
+            <div id="chart-tasks" style="height:340px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-box">
+            <div class="chart-title">Bug 严重程度</div>
+            <div id="chart-bugs" style="height:340px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-4 col-md-2"><div class="stat-card bg-blue" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ teams|length }}</div><div class="stat-label">小组</div></div></div>
+    <div class="col-4 col-md-2"><div class="stat-card bg-indigo" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ students }}</div><div class="stat-label">学生</div></div></div>
+    <div class="col-4 col-md-2"><div class="stat-card bg-teal" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ ai_count }}</div><div class="stat-label">AI记录</div></div></div>
+    <div class="col-4 col-md-2"><div class="stat-card bg-green" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ reports_today }}</div><div class="stat-label">今日日报</div></div></div>
+    <div class="col-4 col-md-2"><div class="stat-card bg-red" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ bugs_total }}</div><div class="stat-label">Bug总数</div></div></div>
+    <div class="col-4 col-md-2"><div class="stat-card bg-blue" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ tasks_total }}</div><div class="stat-label">任务总数</div></div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    var t = echarts.init(document.getElementById('chart-tasks'));
+    var b = echarts.init(document.getElementById('chart-bugs'));
+    t.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0 },
+        series: [{
+            type: 'pie', radius: ['45%', '72%'],
+            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 3 },
+            data: {{ task_status_data | tojson }},
+            emphasis: { label: { fontSize: 18, fontWeight: 'bold' } }
+        }]
+    });
+    b.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0 },
+        color: ['#ef4444','#f97316','#f59e0b','#3b82f6'],
+        series: [{
+            type: 'pie', radius: ['45%', '72%'],
+            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 3 },
+            data: {{ bug_severity_data | tojson }}
+        }]
+    });
+    window.addEventListener('resize', function() { t.resize(); b.resize(); });
+})();
+</script>
+{% endblock %}

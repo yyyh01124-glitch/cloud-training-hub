@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>{{ team.name }}</h3>
+        <div>
+            <a href="{{ url_for('team.edit_team', team_id=team.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+            <a href="{{ url_for('task.board', team_id=team.id) }}" class="btn btn-outline-info btn-sm">任务看板</a>
+        </div>
+    </div>
+    <p class="text-muted">{{ team.description }}</p>
+    <p>{{ team.project.name if team.project else '' }}</p>
+
+    <div class="detail-section">
+        <h5>成员列表 ({{ team.members.count() }})</h5>
+        <table class="table">
+            <thead><tr><th>姓名</th><th>角色</th><th>加入时间</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for m in team.members %}
+                <tr>
+                    <td>{{ m.member.real_name }} {{ '(组长)' if m.role_in_team == 'leader' }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('team.change_member_role', team_id=team.id, user_id=m.user_id) }}" class="d-inline">
+                            <select class="form-select form-select-sm" name="role_in_team" onchange="this.form.submit()" style="width:120px">
+                                {% for k, v in team_roles.items() %}
+                                <option value="{{ k }}" {{ 'selected' if m.role_in_team == k }}>{{ v }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </td>
+                    <td>{{ m.joined_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if m.user_id != current_user.id and m.role_in_team != 'leader' %}
+                        <form method="post" action="{{ url_for('team.remove_member', team_id=team.id, user_id=m.user_id) }}" class="d-inline" onsubmit="return confirm('确认移除此成员？')">
+                            <button class="btn btn-sm btn-danger">移除</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <form method="post" action="{{ url_for('team.add_member', team_id=team.id) }}" class="row g-2">
+            <div class="col-md-5">
+                <select class="form-select form-select-sm" name="user_id">
+                    <option value="">选择成员</option>
+                    {% for u in team.project.course.teacher.taught_courses %}
+                    {# simplified: just show a text input for user_id #}
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        {% if not team.members.filter_by(user_id=current_user.id).first() %}
+        <form method="post" action="{{ url_for('team.join_team', team_id=team.id) }}" class="mt-2">
+            <button class="btn btn-success btn-sm">加入此小组</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

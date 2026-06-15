@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if team else '创建' }}小组{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ '编辑' if team else '创建' }}小组</h3>
+    <div class="form-card">
+        <form method="post">
+            {% if not team %}
+            <div class="mb-3">
+                <label for="project_id" class="form-label">所属项目</label>
+                <select class="form-select" id="project_id" name="project_id" required>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="mb-3">
+                <label for="name" class="form-label">小组名称</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ team.name if team else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">简介</label>
+                <textarea class="form-control" id="description" name="description" rows="2">{{ team.description if team else '' }}</textarea>
+            </div>
+            {% if team %}
+            <div class="mb-3">
+                <label for="deploy_url" class="form-label">部署地址</label>
+                <input type="url" class="form-control" id="deploy_url" name="deploy_url" value="{{ team.deploy_url if team else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="doc_url" class="form-label">文档地址</label>
+                <input type="url" class="form-control" id="doc_url" name="doc_url" value="{{ team.doc_url if team else '' }}">
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a href="{{ url_for('team.list_teams') }}" class="btn btn-secondary">取消</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: cloudhub-web
+    restart: always
+    environment:
+      - FLASK_CONFIG=production
+      - DATABASE_URL=mysql+pymysql://root:cth2024root@db:3306/cloud_training_hub
+      - SECRET_KEY=cloud-hub-prod-secret-2026
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cloudhub-net
+
+  db:
+    image: mysql:8.0
+    container_name: cloudhub-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: cth2024root
+      MYSQL_DATABASE: cloud_training_hub
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloudhub-net
+
+  nginx:
+    image: nginx:latest
+    container_name: cloudhub-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    networks:
+      - cloudhub-net
+
+volumes:
+  mysql_data:
+
+networks:
+  cloudhub-net:
+    driver: bridge

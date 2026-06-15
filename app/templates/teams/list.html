@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination_widget %}
+{% block title %}小组列表{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>小组列表</h3>
+        <a href="{{ url_for('team.create_team') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 创建小组</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+        <div class="col-md-4">
+            <select class="form-select" name="project_id" onchange="this.form.submit()">
+                <option value="">全部项目</option>
+                {% for p in projects %}
+                <option value="{{ p.id }}" {{ 'selected' if project_filter == p.id }}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+    <div class="row">
+        {% for t in teams.items %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5><a href="{{ url_for('team.team_detail', team_id=t.id) }}">{{ t.name }}</a></h5>
+                    <p class="text-muted small">{{ t.project.name if t.project else '' }}</p>
+                    <p class="small">组长: {{ t.leader.real_name if t.leader else '未设置' }} | {{ t.members.count() }} 人</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5">暂无小组</div>
+        {% endfor %}
+    </div>
+    {% from "_macros.html" import pagination_widget %}
+    {{ pagination_widget(teams, 'team.list_teams') }}
+</div>
+{% endblock %}

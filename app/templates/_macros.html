@@ -1,0 +1,92 @@
+{% macro render_field(field, label=None, placeholder='') %}
+<div class="mb-3">
+    {% if label is not none %}
+    <label for="{{ field.id }}" class="form-label">{{ label or field.label.text }}</label>
+    {% endif %}
+    {{ field(class_='form-control' + (' is-invalid' if field.errors else ''), placeholder=placeholder) }}
+    {% for error in field.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro render_submit(text='保存', color='primary') %}
+<button type="submit" class="btn btn-{{ color }}">{{ text }}</button>
+{% endmacro %}
+
+{% macro status_badge(status, mapping) %}
+{% set colors = {
+    'active': 'success', 'inactive': 'secondary',
+    'open': 'warning', 'closed': 'secondary',
+    '新': 'info', '已完成': 'success', '进行中': 'primary', '已关闭': 'secondary', '待开始': 'light',
+} %}
+<span class="badge bg-{{ colors.get(status, 'secondary') }}">{{ mapping.get(status, status) }}</span>
+{% endmacro %}
+
+{% macro task_status_badge(status) %}
+{% set map = {
+    'todo': ('待开始', 'secondary'),
+    'in_progress': ('进行中', 'primary'),
+    'to_test': ('待测试', 'warning'),
+    'done': ('已完成', 'success'),
+    'delayed': ('已延期', 'danger'),
+    'closed': ('已关闭', 'dark'),
+} %}
+{% set info = map.get(status, (status, 'secondary')) %}
+<span class="badge bg-{{ info[1] }}">{{ info[0] }}</span>
+{% endmacro %}
+
+{% macro priority_badge(priority) %}
+{% set map = {'high': ('高', 'danger'), 'medium': ('中', 'warning'), 'low': ('低', 'info')} %}
+{% set info = map.get(priority, (priority, 'secondary')) %}
+<span class="badge bg-{{ info[1] }}">{{ info[0] }}</span>
+{% endmacro %}
+
+{% macro bug_severity_badge(severity) %}
+{% set map = {
+    'fatal': ('致命', 'dark'),
+    'major': ('严重', 'danger'),
+    'normal': ('一般', 'warning'),
+    'minor': ('轻微', 'info'),
+    'suggestion': ('建议', 'secondary'),
+} %}
+{% set info = map.get(severity, (severity, 'secondary')) %}
+<span class="badge bg-{{ info[1] }}">{{ info[0] }}</span>
+{% endmacro %}
+
+{% macro bug_status_badge(status) %}
+{% set map = {
+    'new': ('新建', 'info'),
+    'confirmed': ('已确认', 'primary'),
+    'fixing': ('修复中', 'warning'),
+    'fixed': ('已修复', 'success'),
+    'closed': ('已关闭', 'dark'),
+    'wontfix': ('暂不处理', 'secondary'),
+} %}
+{% set info = map.get(status, (status, 'secondary')) %}
+<span class="badge bg-{{ info[1] }}">{{ info[0] }}</span>
+{% endmacro %}
+
+{% macro pagination_widget(pagination, endpoint) %}
+{% if pagination.pages > 1 %}
+<nav>
+    <ul class="pagination justify-content-center">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+            <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, **request.args) if pagination.has_prev else '#' }}">&laquo;</a>
+        </li>
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {{ 'active' if p == pagination.page }}">
+                <a class="page-link" href="{{ url_for(endpoint, page=p, **request.args) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+            <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, **request.args) if pagination.has_next else '#' }}">&raquo;</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+{% endmacro %}

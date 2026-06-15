@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>{{ project.name }}</h3>
+        <div>
+            <a href="{{ url_for('project.edit_project', project_id=project.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
+            <a href="{{ url_for('task.board', project_id=project.id) }}" class="btn btn-outline-info btn-sm">任务看板</a>
+            <form method="post" action="{{ url_for('project.delete_project', project_id=project.id) }}" class="d-inline" onsubmit="return confirm('确认删除此项目？将同时删除所有关联小组和任务。')">
+                <button type="submit" class="btn btn-outline-danger btn-sm">删除</button>
+            </form>
+        </div>
+    </div>
+    <div class="detail-section">
+        <h5>基本信息</h5>
+        <p><strong>课程:</strong> {{ project.course.name if project.course else '-' }}</p>
+        <p><strong>负责人:</strong> {{ project.leader.real_name if project.leader else '-' }}</p>
+        <p><strong>时间:</strong> {{ project.start_date }} ~ {{ project.end_date }}</p>
+        <p><strong>状态:</strong> <span class="badge bg-primary">{{ project_statuses[project.status] }}</span></p>
+        <p><strong>技术栈:</strong> {{ project.tech_stack }}</p>
+        {% if project.deploy_url %}<p><a href="{{ project.deploy_url }}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> 部署地址</a></p>{% endif %}
+        {% if project.git_repo_url %}<p><a href="{{ project.git_repo_url }}" target="_blank"><i class="bi bi-github"></i> Git仓库</a></p>{% endif %}
+    </div>
+    <div class="detail-section">
+        <h5>小组列表 ({{ teams|length }})</h5>
+        <div class="row">
+            {% for t in teams %}
+            <div class="col-md-4 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h6><a href="{{ url_for('team.team_detail', team_id=t.id) }}">{{ t.name }}</a></h6>
+                        <small class="text-muted">{{ t.members.count() }} 名成员</small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">暂无小组</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

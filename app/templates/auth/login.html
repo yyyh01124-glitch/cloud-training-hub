@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}登录 - 云智实训{% endblock %}
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <div class="brand">
+            <div class="icon"><i class="bi bi-cloud-fill text-white"></i></div>
+            <h2>Cloud Training Hub</h2>
+            <p>云智实训管理平台</p>
+        </div>
+        <form method="post">
+            <div class="mb-3">
+                <label for="username" class="form-label">用户名</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="请输入用户名" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            <div class="mb-4 form-check">
+                <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                <label class="form-check-label text-secondary" for="remember">记住我</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">登 录</button>
+        </form>
+        <p class="text-center text-muted small mt-4">默认账号 admin / admin123</p>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}{% endblock %}
