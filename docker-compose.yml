@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       - FLASK_CONFIG=production
-      - DATABASE_URL=mysql+pymysql://root:cth2024root@db:3306/cloud_training_hub
+      - DATABASE_URL=mysql+pymysql://root:cth2024root@db:3306/cloud_training_hub?charset=utf8mb4
       - SECRET_KEY=cloud-hub-prod-secret-2026
     volumes:
       - ./uploads:/app/uploads
