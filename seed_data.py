@@ -3,7 +3,7 @@ import os, sys, random
 from datetime import date, timedelta
 
 os.environ['FLASK_CONFIG'] = 'development'
-os.environ['DATABASE_URL'] = 'mysql+pymysql://root:123456@localhost:3306/cloud_training_hub'
+os.environ['DATABASE_URL'] = 'mysql+pymysql://root:123456@localhost:3306/cloud_training_hub?charset=utf8mb4'
 os.environ['SECRET_KEY'] = 'seed'
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
