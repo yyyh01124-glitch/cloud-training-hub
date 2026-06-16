@@ -8,11 +8,11 @@
     <table class="table table-hover">
         <thead><tr><th>学生</th><th>所属小组</th><th>最后日报日期</th></tr></thead>
         <tbody>
-            {% for s in missing %}
+            {% for m in missing %}
             <tr>
-                <td>{{ s.real_name }}</td>
-                <td>{% set tm = s.team_memberships.first() %}{{ tm.team.name if tm else '未加入小组' }}</td>
-                <td>{% set last = s.daily_reports.order_by(s.daily_reports[0].report_date.desc()).first() %}{{ last.report_date if last else '从未提交' }}</td>
+                <td>{{ m.user.real_name }}</td>
+                <td>{{ m.team_name }}</td>
+                <td>{{ m.last_date if m.last_date else '从未提交' }}</td>
             </tr>
             {% else %}
             <tr><td colspan="3" class="text-center text-success">全部学生今日已提交日报!</td></tr>

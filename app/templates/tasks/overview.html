@@ -7,8 +7,8 @@
     {% for s in stats %}
     <div class="col-lg-6">
         <div class="chart-box">
-            <div class="chart-title">{{ s.project.name }} ({{ s.total }} 任务)</div>
-            <div id="chart-project-{{ s.project.id }}" style="height:260px;"></div>
+            <div class="chart-title">{{ s.project_name }} ({{ s.total }} 任务)</div>
+            <div id="chart-project-{{ s.project_id }}" style="height:260px;"></div>
         </div>
     </div>
     {% endfor %}
@@ -27,7 +27,7 @@
             {name:'已延期',value:s.status_counts.delayed},
             {name:'已关闭',value:s.status_counts.closed}
         ];
-        echarts.init(document.getElementById('chart-project-'+s.project.id)).setOption({
+        echarts.init(document.getElementById('chart-project-'+s.project_id)).setOption({
             tooltip:{trigger:'item'}, legend:{bottom:0,textStyle:{fontSize:11}},
             series:[{type:'pie',radius:['40%','65%'],itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},data:data}]
         });

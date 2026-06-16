@@ -154,7 +154,12 @@ def teacher_overview():
         tasks_by_status = {}
         for s in ['todo', 'in_progress', 'to_test', 'done', 'delayed', 'closed']:
             tasks_by_status[s] = Task.query.filter_by(project_id=p.id, status=s).count()
-        stats.append({'project': p, 'status_counts': tasks_by_status, 'total': sum(tasks_by_status.values())})
+        stats.append({
+            'project_name': p.name,
+            'project_id': p.id,
+            'status_counts': tasks_by_status,
+            'total': sum(tasks_by_status.values())
+        })
     return render_template('tasks/overview.html', stats=stats)
 
 

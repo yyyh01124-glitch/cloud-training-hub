@@ -141,7 +141,13 @@ def missing_reports():
     for s in students:
         r = DailyReport.query.filter_by(user_id=s.id, report_date=today).first()
         if not r:
-            missing.append(s)
+            last_rpt = DailyReport.query.filter_by(user_id=s.id).order_by(DailyReport.report_date.desc()).first()
+            tm = s.team_memberships.first()
+            missing.append({
+                'user': s,
+                'team_name': tm.team.name if tm and tm.team else '未加入小组',
+                'last_date': last_rpt.report_date if last_rpt else None
+            })
     return render_template('reports/missing.html', missing=missing, today=today)
 
 
