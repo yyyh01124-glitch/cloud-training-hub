@@ -33,6 +33,15 @@
 
 <div class="row g-3 mb-4">
     <div class="col-lg-6">
+        <div class="chart-box"><div class="chart-title">日报提交趋势 (近7天)</div><div id="chart-report" style="height:260px;"></div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-box"><div class="chart-title">小组任务完成率排名</div><div id="chart-team" style="height:260px;"></div></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
         <div class="chart-box">
             <div class="chart-title">任务状态分布</div>
             <div id="chart-tasks" style="height:340px;"></div>
@@ -58,29 +67,11 @@
 {% block extra_js %}
 <script>
 (function() {
-    var t = echarts.init(document.getElementById('chart-tasks'));
-    var b = echarts.init(document.getElementById('chart-bugs'));
-    t.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
-        series: [{
-            type: 'pie', radius: ['45%', '72%'],
-            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 3 },
-            data: {{ task_status_data | tojson }},
-            emphasis: { label: { fontSize: 18, fontWeight: 'bold' } }
-        }]
-    });
-    b.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
-        color: ['#ef4444','#f97316','#f59e0b','#3b82f6'],
-        series: [{
-            type: 'pie', radius: ['45%', '72%'],
-            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 3 },
-            data: {{ bug_severity_data | tojson }}
-        }]
-    });
-    window.addEventListener('resize', function() { t.resize(); b.resize(); });
+    echarts.init(document.getElementById('chart-tasks')).setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:['45%','72%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:3},data:{{ task_status_data|tojson }}}]});
+    echarts.init(document.getElementById('chart-bugs')).setOption({tooltip:{trigger:'item'},legend:{bottom:0},color:['#ef4444','#f97316','#f59e0b','#3b82f6'],series:[{type:'pie',radius:['45%','72%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:3},data:{{ bug_severity_data|tojson }}}]});
+    echarts.init(document.getElementById('chart-report')).setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:{{ report_dates|tojson }}},yAxis:{type:'value'},series:[{type:'line',smooth:true,lineStyle:{color:'#3b82f6',width:3},itemStyle:{color:'#3b82f6'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(59,130,246,0.3)'},{offset:1,color:'rgba(59,130,246,0.02)'}]}},data:{{ report_counts|tojson }}}]});
+    echarts.init(document.getElementById('chart-team')).setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},xAxis:{type:'category',data:{{ team_ranking|tojson }}.map(function(d){return d.name})},yAxis:{type:'value',max:100},series:[{type:'bar',itemStyle:{borderRadius:[4,4,0,0],color:'#10b981'},label:{show:true,position:'top',formatter:'{c}%'},data:{{ team_ranking|tojson }}.map(function(d){return d.rate})}]});
+    window.addEventListener('resize',function(){['chart-tasks','chart-bugs','chart-report','chart-team'].forEach(function(id){echarts.getInstanceByDom(document.getElementById(id)).resize()})});
 })();
 </script>
 {% endblock %}

@@ -105,7 +105,54 @@ def create_app(config_name=None):
         from flask import send_from_directory
         return send_from_directory(os.path.join(app.root_path, '..', 'uploads'), filename)
 
+    # 启动定时爬虫调度器
+    _start_crawler_scheduler(app)
+
     return app
+
+
+def _start_crawler_scheduler(app):
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from crawler.spider import crawl_url
+        from crawler.parser import parse_and_save
+        from app.models import CrawlerConfig
+
+        scheduler = BackgroundScheduler()
+        with app.app_context():
+            configs = CrawlerConfig.query.filter_by(is_active=True).all()
+            for cfg in configs:
+                if cfg.cron_expr:
+                    parts = cfg.cron_expr.strip().split()
+                    if len(parts) == 5:
+                        scheduler.add_job(
+                            func=lambda cid=cfg.id: _run_scheduled_crawl(cid),
+                            trigger='cron',
+                            minute=parts[0], hour=parts[1], day=parts[2],
+                            month=parts[3], day_of_week=parts[4],
+                            id=f'crawler_{cfg.id}',
+                            replace_existing=True
+                        )
+            if configs:
+                scheduler.start()
+                import logging
+                logging.getLogger(__name__).info(f'Crawler scheduler started with {len(configs)} configs')
+    except Exception:
+        pass
+
+
+def _run_scheduled_crawl(config_id):
+    from app import create_app
+    app = create_app()
+    with app.app_context():
+        from app.extensions import db
+        from app.models import CrawlerConfig
+        from crawler.spider import crawl_url
+        from crawler.parser import parse_and_save
+        config = db.session.get(CrawlerConfig, config_id)
+        if config and config.is_active:
+            results = crawl_url(config.source_url, config.source_type)
+            parse_and_save(results, config)
 
 
 def _ensure_admin_password():

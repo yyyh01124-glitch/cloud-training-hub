@@ -91,6 +91,37 @@ def edit_record(record_id):
     return render_template('ai_records/form.html', record=record, tasks=tasks)
 
 
+@ai_bp.route('/cases')
+@login_required
+def case_library():
+    scene = request.args.get('scene', '')
+    tool = request.args.get('tool', '')
+    query = AiRecord.query.filter(AiRecord.is_adopted == True).filter(AiRecord.prompt_text != '')
+    if scene:
+        query = query.filter_by(scene_category=scene)
+    if tool:
+        query = query.filter_by(tool_name=tool)
+    records = query.order_by(AiRecord.created_at.desc()).limit(30).all()
+    return render_template('ai_records/cases.html', records=records, scene_filter=scene, tool_filter=tool)
+
+
+@ai_bp.route('/stats')
+@login_required
+def ai_stats():
+    from sqlalchemy import func as safunc
+    by_tool = db.session.query(AiRecord.tool_name, safunc.count(AiRecord.id)).group_by(AiRecord.tool_name).all()
+    by_scene = db.session.query(AiRecord.scene_category, safunc.count(AiRecord.id)).group_by(AiRecord.scene_category).all()
+    by_user = db.session.query(User.real_name, safunc.count(AiRecord.id)).join(AiRecord).group_by(User.id).all()
+    adopted = AiRecord.query.filter_by(is_adopted=True).count()
+    modified = AiRecord.query.filter_by(has_modified=True).count()
+    total = AiRecord.query.count()
+    return render_template('ai_records/stats.html',
+                           by_tool=[{'name': t, 'value': c} for t, c in by_tool],
+                           by_scene=[{'name': t, 'value': c} for t, c in by_scene],
+                           by_user=[{'name': t, 'value': c} for t, c in by_user],
+                           adopted=adopted, modified=modified, total=total)
+
+
 @ai_bp.route('/<int:record_id>/delete', methods=['POST'])
 @login_required
 def delete_record(record_id):

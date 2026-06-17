@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}AI 提示词案例库{% endblock %}
+{% block page_title_bar %}AI 提示词案例库{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('ai.list_records') }}">AI记录</a> <span>/</span> 案例库{% endblock %}
+{% block content %}
+<form class="row g-2 mb-3" method="get">
+    <div class="col-md-3"><select class="form-select form-select-sm" name="scene" onchange="this.form.submit()"><option value="">全部场景</option>{% for k, v in ai_scenes.items() %}<option value="{{ k }}" {{ 'selected' if scene_filter == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select class="form-select form-select-sm" name="tool" onchange="this.form.submit()"><option value="">全部工具</option><option value="通义灵码" {{ 'selected' if tool_filter == '通义灵码' }}>通义灵码</option><option value="豆包" {{ 'selected' if tool_filter == '豆包' }}>豆包</option><option value="ChatGPT" {{ 'selected' if tool_filter == 'ChatGPT' }}>ChatGPT</option></select></div>
+</form>
+<div class="row">
+    {% for r in records %}
+    <div class="col-md-6 mb-3">
+        <div class="detail-section">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-info">{{ ai_scenes[r.scene_category] }}</span>
+                <small class="text-muted">{{ r.tool_name }} · {{ r.user.real_name }}</small>
+            </div>
+            <p class="fw-bold mb-1">提示词:</p>
+            <pre class="bg-light p-2 rounded" style="font-size:0.8rem;max-height:80px;overflow:auto;">{{ r.prompt_text }}</pre>
+            <p class="small text-muted mb-1">效果: {{ r.effect_description or r.ai_output_summary[:60] }}</p>
+            <div class="d-flex gap-2">
+                <span class="badge bg-{{ 'success' if r.is_adopted else 'secondary' }}">{{ '已采纳' if r.is_adopted else '未采纳' }}</span>
+                <span class="badge bg-{{ 'warning' if r.has_modified else 'info' }}">{{ '已修改' if r.has_modified else '未修改' }}</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 empty-state"><p>暂无案例</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

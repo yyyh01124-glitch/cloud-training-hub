@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}AI 使用统计{% endblock %}
+{% block page_title_bar %}AI 使用统计{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('ai.list_records') }}">AI记录</a> <span>/</span> 统计{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="stat-card bg-blue"><div class="stat-value">{{ total }}</div><div class="stat-label">使用总次数</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card bg-green"><div class="stat-value">{{ adopted }}</div><div class="stat-label">直接采纳</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card bg-amber"><div class="stat-value">{{ modified }}</div><div class="stat-label">人工修改后采用</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card bg-indigo"><div class="stat-value">{{ (adopted*100//total) if total else 0 }}%</div><div class="stat-label">采纳率</div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6"><div class="chart-box"><div class="chart-title">AI 工具使用分布</div><div id="chart-tool" style="height:300px;"></div></div></div>
+    <div class="col-md-6"><div class="chart-box"><div class="chart-title">使用场景分布</div><div id="chart-scene" style="height:300px;"></div></div></div>
+    <div class="col-12"><div class="chart-box"><div class="chart-title">个人使用统计</div><div id="chart-user" style="height:300px;"></div></div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    echarts.init(document.getElementById('chart-tool')).setOption({tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','65%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:2},data:{{ by_tool|tojson }}}]});
+    echarts.init(document.getElementById('chart-scene')).setOption({tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','65%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:2},data:{{ by_scene|tojson }}}]});
+    echarts.init(document.getElementById('chart-user')).setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:{{ by_user|tojson }}.map(function(d){return d.name})},yAxis:{type:'value'},series:[{type:'bar',itemStyle:{borderRadius:[4,4,0,0],color:'#3b82f6'},data:{{ by_user|tojson }}.map(function(d){return d.value})}]});
+})();
+</script>
+{% endblock %}

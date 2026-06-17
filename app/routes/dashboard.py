@@ -42,6 +42,24 @@ def teacher_dashboard():
         {'name': '轻微', 'value': Bug.query.filter_by(severity='minor').count()},
     ]
 
+    # Team ranking
+    team_ranking = []
+    for t in teams:
+        done = Task.query.filter_by(team_id=t.id, status='done').count()
+        total_t = Task.query.filter_by(team_id=t.id).count()
+        rate = round(done / total_t * 100) if total_t > 0 else 0
+        team_ranking.append({'name': t.name, 'done': done, 'total': total_t, 'rate': rate})
+    team_ranking.sort(key=lambda x: x['rate'], reverse=True)
+
+    # Daily report line chart data (last 7 days)
+    from datetime import timedelta
+    report_dates = []
+    report_counts = []
+    for i in range(6, -1, -1):
+        d = __import__('datetime').date.today() - timedelta(days=i)
+        report_dates.append(d.strftime('%m-%d'))
+        report_counts.append(DailyReport.query.filter_by(report_date=d).count())
+
     return render_template('dashboard/teacher.html',
                            projects=projects, teams=teams, students=students,
                            tasks_total=tasks_total, tasks_done=tasks_done,
@@ -49,7 +67,10 @@ def teacher_dashboard():
                            bugs_open=bugs_open, ai_count=ai_count,
                            report_count=report_count, reports_today=reports_today,
                            task_status_data=task_status_data,
-                           bug_severity_data=bug_severity_data)
+                           bug_severity_data=bug_severity_data,
+                           team_ranking=team_ranking,
+                           report_dates=report_dates,
+                           report_counts=report_counts)
 
 
 def student_dashboard():
