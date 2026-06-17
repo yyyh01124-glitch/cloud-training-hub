@@ -79,8 +79,13 @@ def register():
         real_name = request.form.get('real_name', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
-        # Admin can set role, self-registration defaults to student
-        role_id = request.form.get('role_id', type=int) if is_admin else 3
+        # Admin can set any role, self-registration: teacher or student only
+        if is_admin:
+            role_id = request.form.get('role_id', type=int)
+        else:
+            role_id = request.form.get('role_id', type=int) or 3
+            if role_id not in (2, 3):
+                role_id = 3
 
         errors = []
         if not username or len(username) < 3:
