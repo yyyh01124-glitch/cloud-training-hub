@@ -23,6 +23,9 @@
             </div>
             <button type="submit" class="btn btn-primary w-100 py-2">登 录</button>
         </form>
+        <p class="text-center text-muted small mt-3">
+            还没有账号？<a href="{{ url_for('auth.register') }}">立即注册</a>
+        </p>
     </div>
 </div>
 {% endblock %}

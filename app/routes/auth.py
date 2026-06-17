@@ -68,9 +68,10 @@ def logout():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
-@login_required
-@role_required('admin')
 def register():
+    # If admin is already logged in, show role selection
+    is_admin = current_user.is_authenticated and current_user.role.name == 'admin'
+
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -78,7 +79,8 @@ def register():
         real_name = request.form.get('real_name', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
-        role_id = request.form.get('role_id', type=int)
+        # Admin can set role, self-registration defaults to student
+        role_id = request.form.get('role_id', type=int) if is_admin else 3
 
         errors = []
         if not username or len(username) < 3:
@@ -102,12 +104,14 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
-            flash(f'用户 {username} 创建成功', 'success')
-            return redirect(url_for('admin.users'))
+            flash(f'注册成功，请登录', 'success')
+            if is_admin:
+                return redirect(url_for('admin.users'))
+            return redirect(url_for('auth.login'))
 
     from app.models import Role
-    roles = Role.query.all()
-    return render_template('auth/register.html', roles=roles)
+    roles = Role.query.all() if is_admin else []
+    return render_template('auth/register.html', roles=roles, is_admin=is_admin)
 
 
 @auth_bp.route('/profile', methods=['GET', 'POST'])
