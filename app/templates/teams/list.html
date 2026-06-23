@@ -7,6 +7,17 @@
         <h3>小组列表</h3>
         <a href="{{ url_for('team.create_team') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 创建小组</a>
     </div>
+
+    {% if current_user.role.name == 'student' %}
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if tab == 'my' }}" href="{{ url_for('team.list_teams', tab='my') }}">我的小组</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if tab == 'all' }}" href="{{ url_for('team.list_teams', tab='all') }}">所有小组</a>
+        </li>
+    </ul>
+    {% else %}
     <form class="row g-2 mb-3" method="get">
         <div class="col-md-4">
             <select class="form-select" name="project_id" onchange="this.form.submit()">
@@ -17,22 +28,40 @@
             </select>
         </div>
     </form>
+    {% endif %}
+
     <div class="row">
         {% for t in teams.items %}
         <div class="col-md-4 mb-3">
             <div class="card">
                 <div class="card-body">
                     <h5><a href="{{ url_for('team.team_detail', team_id=t.id) }}">{{ t.name }}</a></h5>
-                    <p class="text-muted small">{{ t.project.name if t.project else '' }}</p>
-                    <p class="small">组长: {{ t.leader.real_name if t.leader else '未设置' }} | {{ t.members.count() }} 人</p>
+                    <p class="text-muted small mb-1">{{ t.project.name if t.project else '' }}</p>
+                    <p class="small mb-2">组长: {{ t.leader.real_name if t.leader else '未设置' }} | {{ t.members.count() }} 人</p>
+                    {% if current_user.role.name == 'student' %}
+                        {% set is_member = t.members.filter_by(user_id=current_user.id).first() %}
+                        {% if is_member %}
+                        <span class="badge bg-success">已加入</span>
+                        {% elif tab == 'all' %}
+                        <form method="post" action="{{ url_for('team.join_team', team_id=t.id) }}">
+                            <button class="btn btn-outline-success btn-sm">加入小组</button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
         {% else %}
-        <div class="col-12 text-center text-muted py-5">暂无小组</div>
+        <div class="col-12 text-center text-muted py-5">
+            {% if tab == 'my' %}
+            你还没有加入小组
+            <a href="{{ url_for('team.list_teams', tab='all') }}" class="btn btn-outline-primary btn-sm ms-2">查看所有小组</a>
+            {% else %}
+            暂无小组
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
-    {% from "_macros.html" import pagination_widget %}
     {{ pagination_widget(teams, 'team.list_teams') }}
 </div>
 {% endblock %}

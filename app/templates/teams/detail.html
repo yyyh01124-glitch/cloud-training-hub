@@ -1,61 +1,194 @@
 {% extends "base.html" %}
 {% block title %}{{ team.name }}{% endblock %}
+{% block page_title_bar %}{{ team.name }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('team.list_teams') }}">小组</a> <span>/</span> {{ team.name }}{% endblock %}
+{% block top_actions %}
+<a href="{{ url_for('task.board', team_id=team.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-columns-gap"></i> 看板</a>
+<a href="{{ url_for('team.edit_team', team_id=team.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+{% if current_user.role.name in ('admin', 'teacher') %}
+<form method="post" action="{{ url_for('team.delete_team', team_id=team.id) }}" style="display:inline" onsubmit="return confirm('确认删除该小组？所有关联数据将被清除。')">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> 删除</button>
+</form>
+{% endif %}
+{% if current_user.role.name in ('admin', 'teacher') and team.documents.count() > 0 %}
+<a href="{{ url_for('team.download_all_docs', team_id=team.id) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> 打包下载</a>
+{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>{{ team.name }}</h3>
-        <div>
-            <a href="{{ url_for('team.edit_team', team_id=team.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
-            <a href="{{ url_for('task.board', team_id=team.id) }}" class="btn btn-outline-info btn-sm">任务看板</a>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <!-- 基本信息 -->
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-info-circle"></i> 小组信息</h5></div>
+            <div class="panel-body">
+                <p><strong>项目：</strong>{{ team.project.name if team.project else '-' }}</p>
+                <p><strong>描述：</strong>{{ team.description or '暂无' }}</p>
+                {% if team.deploy_url %}<p><strong>部署地址：</strong><a href="{{ team.deploy_url }}" target="_blank">{{ team.deploy_url }}</a></p>{% endif %}
+                {% if team.doc_url %}<p><strong>文档地址：</strong><a href="{{ team.doc_url }}" target="_blank">{{ team.doc_url }}</a></p>{% endif %}
+                {% if team.class_ %}<p><strong>班级：</strong>{{ team.class_.name }}</p>{% endif %}
+                <hr>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fs-4 fw-bold text-blue">{{ task_rate }}%</div>
+                        <small class="text-muted">任务完成率</small>
+                        <div class="progress-bar-mini mt-1 mx-auto"><div class="progress-bar-fill {% if task_rate >= 80 %}bg-green{% elif task_rate >= 50 %}bg-amber{% else %}bg-red{% endif %}" style="width:{{ task_rate }}%"></div></div>
+                        <small class="text-muted">{{ tasks_done }}/{{ tasks_total }}</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-4 fw-bold text-green">{{ report_rate }}%</div>
+                        <small class="text-muted">今日日报率</small>
+                        <div class="progress-bar-mini mt-1 mx-auto"><div class="progress-bar-fill {% if report_rate >= 80 %}bg-green{% elif report_rate >= 50 %}bg-amber{% else %}bg-red{% endif %}" style="width:{{ report_rate }}%"></div></div>
+                        <small class="text-muted">{{ reports_today }}/{{ member_count }}人</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-4 fw-bold text-red">{{ tasks_delayed }}</div>
+                        <small class="text-muted">延期任务</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成员 -->
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-people"></i> 成员 ({{ team.members.count() }})</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>姓名</th><th>职责</th><th>加入时间</th><th></th></tr></thead>
+                    <tbody>
+                        {% for m in team.members %}
+                        <tr>
+                            <td>
+                                <strong>{{ m.member.real_name }}</strong>
+                                {% if m.role_in_team == 'leader' %}<span class="badge bg-warning">组长</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.role.name in ('admin', 'teacher') or m.user_id == team.leader_id or current_user.id == team.leader_id %}
+                                <div class="role-checkboxes">
+                                    {% set user_roles = m.role_in_team.split(',') if m.role_in_team else ['member'] %}
+                                    {% for k, v in team_roles.items() %}
+                                    <label class="role-check-label {{ 'active' if k in user_roles }}">
+                                        <input type="checkbox" name="role_{{ k }}" value="{{ k }}"
+                                               {{ 'checked' if k in user_roles }}
+                                               onchange="updateRoles({{ team.id }}, {{ m.user_id }}, this)">
+                                        {{ v }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">
+                                    {% set user_roles = m.role_in_team.split(',') if m.role_in_team else ['member'] %}
+                                    {% for r in user_roles %}<span class="badge bg-info me-1">{{ team_roles.get(r.strip(), r) }}</span>{% endfor %}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ m.joined_at.strftime('%Y-%m-%d') if m.joined_at else '' }}</td>
+                            <td>
+                                {% if m.user_id != current_user.id and m.role_in_team != 'leader' and (current_user.role.name in ('admin', 'teacher') or current_user.id == team.leader_id) %}
+                                <form method="post" action="{{ url_for('team.remove_member', team_id=team.id, user_id=m.user_id) }}" onsubmit="return confirm('确定移除该成员？')">
+                                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-    <p class="text-muted">{{ team.description }}</p>
-    <p>{{ team.project.name if team.project else '' }}</p>
 
-    <div class="detail-section">
-        <h5>成员列表 ({{ team.members.count() }})</h5>
-        <table class="table">
-            <thead><tr><th>姓名</th><th>角色</th><th>加入时间</th><th>操作</th></tr></thead>
-            <tbody>
-                {% for m in team.members %}
-                <tr>
-                    <td>{{ m.member.real_name }} {{ '(组长)' if m.role_in_team == 'leader' }}</td>
-                    <td>
-                        <form method="post" action="{{ url_for('team.change_member_role', team_id=team.id, user_id=m.user_id) }}" class="d-inline">
-                            <select class="form-select form-select-sm" name="role_in_team" onchange="this.form.submit()" style="width:120px">
-                                {% for k, v in team_roles.items() %}
-                                <option value="{{ k }}" {{ 'selected' if m.role_in_team == k }}>{{ v }}</option>
+    <div class="col-lg-5">
+        <!-- 文档库 -->
+        <div class="panel">
+            <div class="panel-header d-flex justify-content-between">
+                <h5><i class="bi bi-folder2"></i> 项目文档</h5>
+                {% if team.documents.count() > 0 and current_user.role.name in ('admin', 'teacher') %}
+                <a href="{{ url_for('team.download_all_docs', team_id=team.id) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> 打包下载</a>
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% set docs_list = team.documents.all() %}
+                {% if docs_list %}
+                <div class="activity-feed mb-3">
+                    {% for doc in docs_list %}
+                    <div class="activity-item">
+                        <i class="bi bi-file-earmark text-blue"></i>
+                        <div>
+                            <a href="{{ doc.file_url }}" target="_blank">{{ doc.name }}</a>
+                            <small class="text-muted d-block">{{ doc_categories.get(doc.doc_category, doc.doc_category) }}</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <small class="text-muted">{{ doc.uploader.real_name if doc.uploader else '' }}</small>
+                            {% if current_user.id == doc.uploaded_by or current_user.role.name in ('admin', 'teacher') %}
+                            <form method="post" action="{{ url_for('team.delete_document', team_id=team.id, doc_id=doc.id) }}" onsubmit="return confirm('删除该文档？')">
+                                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-2">暂无文档，请上传项目相关文档</p>
+                {% endif %}
+
+                <form method="post" action="{{ url_for('team.upload_document', team_id=team.id) }}" enctype="multipart/form-data">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control form-control-sm" name="doc_name" placeholder="文档名称">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" name="doc_category">
+                                {% for k, v in doc_categories.items() %}
+                                <option value="{{ k }}">{{ v }}</option>
                                 {% endfor %}
                             </select>
-                        </form>
-                    </td>
-                    <td>{{ m.joined_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
-                        {% if m.user_id != current_user.id and m.role_in_team != 'leader' %}
-                        <form method="post" action="{{ url_for('team.remove_member', team_id=team.id, user_id=m.user_id) }}" class="d-inline" onsubmit="return confirm('确认移除此成员？')">
-                            <button class="btn btn-sm btn-danger">移除</button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <form method="post" action="{{ url_for('team.add_member', team_id=team.id) }}" class="row g-2">
-            <div class="col-md-5">
-                <select class="form-select form-select-sm" name="user_id">
-                    <option value="">选择成员</option>
-                    {% for u in team.project.course.teacher.taught_courses %}
-                    {# simplified: just show a text input for user_id #}
-                    {% endfor %}
-                </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="file" class="form-control form-control-sm" name="doc_file" required onchange="this.form.submit()">
+                        </div>
+                    </div>
+                </form>
             </div>
-        </form>
-        {% if not team.members.filter_by(user_id=current_user.id).first() %}
-        <form method="post" action="{{ url_for('team.join_team', team_id=team.id) }}" class="mt-2">
-            <button class="btn btn-success btn-sm">加入此小组</button>
-        </form>
-        {% endif %}
+        </div>
+
+        <!-- 加入/退出 -->
+        <div class="panel">
+            <div class="panel-body">
+                {% set am_member = team.members.filter_by(user_id=current_user.id).first() %}
+                {% if am_member %}
+                <form method="post" action="{{ url_for('team.leave_team', team_id=team.id) }}" onsubmit="return confirm('确定退出该小组？')">
+                    <button class="btn btn-outline-danger w-100"><i class="bi bi-box-arrow-left"></i> 退出小组</button>
+                </form>
+                {% else %}
+                <form method="post" action="{{ url_for('team.join_team', team_id=team.id) }}">
+                    <button class="btn btn-success w-100">加入此小组</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function updateRoles(teamId, userId, checkbox) {
+    var allChecks = checkbox.closest('.role-checkboxes').querySelectorAll('input[type=checkbox]');
+    var anyChecked = false;
+    allChecks.forEach(function(c) { if (c.checked) anyChecked = true; });
+    if (!anyChecked) { checkbox.checked = true; return; }
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/teams/' + teamId + '/members/' + userId + '/role';
+    allChecks.forEach(function(c) {
+        if (c.checked) {
+            var input = document.createElement('input');
+            input.type = 'hidden'; input.name = 'role_' + c.value; input.value = c.value;
+            form.appendChild(input);
+        }
+    });
+    document.body.appendChild(form); form.submit();
+}
+</script>
 {% endblock %}

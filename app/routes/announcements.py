@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import Announcement
-from app.utils.decorators import role_required
+from app.utils.decorators import role_required, send_notification
 
 announcement_bp = Blueprint('announcement', __name__)
 

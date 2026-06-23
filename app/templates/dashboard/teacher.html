@@ -1,77 +1,322 @@
 {% extends "base.html" %}
-{% block title %}数据驾驶舱{% endblock %}
-{% block page_title_bar %}数据驾驶舱{% endblock %}
-{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 数据驾驶舱{% endblock %}
+{% block title %}教学监控台{% endblock %}
+
 {% block content %}
 
+{% if user_classes|length > 0 %}
+<!-- ===== 班级选择器 ===== -->
+<div class="class-selector-bar mb-3">
+    {% for c in user_classes %}
+    <a href="{{ url_for('dashboard.index', class_id=c.id) }}"
+       class="class-select-chip {% if selected_class and selected_class.id == c.id %}active{% elif not selected_class and loop.first %}active{% endif %}">
+        <i class="bi bi-mortarboard"></i> {{ c.name }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if selected_class %}
+<div class="text-muted small mb-3">
+    当前班级：<strong>{{ selected_class.name }}</strong>
+    &nbsp;|&nbsp; 邀请码：<code>{{ selected_class.invite_code }}</code>
+    &nbsp;|&nbsp; {{ selected_class.members.filter_by(role_in_class='student').count() }}名学生
+</div>
+{% endif %}
+
+<!-- ===== 预警条 ===== -->
+{% if missing_count > 0 or delayed_tasks > 0 or unreviewed_reports > 0 %}
+<div class="alert-bar">
+    {% if missing_count > 0 %}
+    <a href="{{ url_for('report.missing_reports') }}" class="alert-item alert-danger-item">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>{{ missing_count }}</strong> 人今日未提交日报
+        <span class="alert-arrow">→</span>
+    </a>
+    {% endif %}
+    {% if delayed_tasks > 0 %}
+    <a href="{{ url_for('task.board') }}" class="alert-item alert-warning-item">
+        <i class="bi bi-clock-fill"></i>
+        <strong>{{ delayed_tasks }}</strong> 个任务已延期
+        <span class="alert-arrow">→</span>
+    </a>
+    {% endif %}
+    {% if unreviewed_reports > 0 %}
+    <a href="{{ url_for('report.list_reports') }}" class="alert-item alert-info-item">
+        <i class="bi bi-chat-square-text"></i>
+        <strong>{{ unreviewed_reports }}</strong> 篇日报待点评
+        <span class="alert-arrow">→</span>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ===== 核心统计卡片 ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-xl-3">
+    <div class="col-6 col-xl-2">
         <div class="stat-card bg-blue">
-            <div class="stat-value">{{ projects|length }}</div>
-            <div class="stat-label">项目总数</div>
+            <div class="stat-value" data-target="{{ tasks_total }}">0</div>
+            <div class="stat-label">任务总数</div>
         </div>
     </div>
-    <div class="col-6 col-xl-3">
+    <div class="col-6 col-xl-2">
         <div class="stat-card bg-green">
-            <div class="stat-value">{{ tasks_done }}</div>
-            <div class="stat-label">已完成任务</div>
+            <div class="stat-value" data-target="{{ tasks_done }}">0</div>
+            <div class="stat-label">已完成</div>
         </div>
     </div>
-    <div class="col-6 col-xl-3">
+    <div class="col-6 col-xl-2">
         <div class="stat-card bg-amber">
-            <div class="stat-value">{{ tasks_delayed }}</div>
-            <div class="stat-label">已延期任务</div>
+            <div class="stat-value" data-target="{{ tasks_delayed }}">0</div>
+            <div class="stat-label">已延期</div>
         </div>
     </div>
-    <div class="col-6 col-xl-3">
+    <div class="col-6 col-xl-2">
         <div class="stat-card bg-red">
-            <div class="stat-value">{{ bugs_open }}</div>
-            <div class="stat-label">未解决 Bug</div>
+            <div class="stat-value" data-target="{{ bugs_open }}">0</div>
+            <div class="stat-label">未解决Bug</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-indigo">
+            <div class="stat-value" data-target="{{ reports_today }}">0</div>
+            <div class="stat-label">今日日报</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-teal">
+            <div class="stat-value" data-target="{{ students }}">0</div>
+            <div class="stat-label">学生数</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-indigo" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+            <div class="stat-value" data-target="{{ deploy_rate }}">0</div>
+            <div class="stat-label">部署成功率</div>
         </div>
     </div>
 </div>
 
+<!-- ===== 双栏布局 ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-lg-6">
-        <div class="chart-box"><div class="chart-title">日报提交趋势 (近7天)</div><div id="chart-report" style="height:260px;"></div></div>
+    <!-- 左栏：待点评 + 小组排名 -->
+    <div class="col-lg-7">
+        {% if class_comparison %}
+        <!-- 班级对比 -->
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-bar-chart"></i> 班级对比</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>班级</th><th>学生</th><th>任务完成率</th><th>今日日报率</th></tr></thead>
+                    <tbody>
+                        {% for c in class_comparison %}
+                        <tr>
+                            <td><a href="{{ url_for('dashboard.index', class_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+                            <td>{{ c.student_count }}人</td>
+                            <td>
+                                <div class="progress-bar-mini"><div class="progress-bar-fill {% if c.task_rate >= 80 %}bg-green{% elif c.task_rate >= 50 %}bg-amber{% else %}bg-red{% endif %}" style="width:{{ c.task_rate }}%"></div></div>
+                                <small>{{ c.task_rate }}%</small>
+                            </td>
+                            <td><small>{{ c.report_rate }}%</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        <!-- 小组进度排名 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="bi bi-trophy"></i> 小组任务完成率排名</h5>
+            </div>
+            <div class="panel-body p-0">
+                {% if team_ranking %}
+                <table class="table mb-0">
+                    <thead><tr><th>#</th><th>小组</th><th>成员</th><th>进度</th><th>完成/总数</th><th>延期</th></tr></thead>
+                    <tbody>
+                        {% for t in team_ranking %}
+                        <tr>
+                            <td>
+                                {% if loop.index == 1 %}<span class="rank-badge gold">1</span>
+                                {% elif loop.index == 2 %}<span class="rank-badge silver">2</span>
+                                {% elif loop.index == 3 %}<span class="rank-badge bronze">3</span>
+                                {% else %}{{ loop.index }}{% endif %}
+                            </td>
+                            <td><strong>{{ t.name }}</strong></td>
+                            <td>{{ t.members }}人</td>
+                            <td>
+                                <div class="progress-bar-mini">
+                                    <div class="progress-bar-fill {% if t.rate >= 80 %}bg-green{% elif t.rate >= 50 %}bg-amber{% else %}bg-red{% endif %}" style="width:{{ t.rate }}%"></div>
+                                </div>
+                                <small>{{ t.rate }}%</small>
+                            </td>
+                            <td>{{ t.done }}/{{ t.total }}</td>
+                            <td>{% if t.delayed > 0 %}<span class="text-danger">{{ t.delayed }}</span>{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state-sm"><p>暂无小组数据</p></div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div class="col-lg-6">
-        <div class="chart-box"><div class="chart-title">小组任务完成率排名</div><div id="chart-team" style="height:260px;"></div></div>
+
+    <!-- 右栏：待点评日报 + 最近动态 -->
+    <div class="col-lg-5">
+        <!-- 待点评日报 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="bi bi-chat-dots"></i> 待点评日报</h5>
+                {% if pending_reviews %}
+                <a href="{{ url_for('report.list_reports') }}" class="text-decoration-none" style="font-size:0.82rem;">全部 →</a>
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if pending_reviews %}
+                <div class="activity-feed">
+                    {% for r in pending_reviews[:5] %}
+                    <div class="activity-item">
+                        <i class="bi bi-journal-text text-amber"></i>
+                        <div>
+                            <a href="{{ url_for('report.review_report', report_id=r.id) }}">{{ r.user.real_name }}</a>
+                            <small class="text-muted"> {{ r.report_date.strftime('%m-%d') if r.report_date else '' }}</small>
+                        </div>
+                        <a href="{{ url_for('report.review_report', report_id=r.id) }}" class="btn btn-outline-primary btn-sm">点评</a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="bi bi-check-circle text-success" style="font-size:1.5rem;"></i>
+                    <p class="mb-0">全部已点评</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 最近提交的日报 -->
+        {% if recent_reports %}
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="bi bi-clock"></i> 最近提交</h5>
+            </div>
+            <div class="panel-body">
+                <div class="activity-feed">
+                    {% for r in recent_reports[:5] %}
+                    <div class="activity-item">
+                        <i class="bi bi-journal-check text-green"></i>
+                        <div>
+                            <strong>{{ r.user.real_name }}</strong>
+                            <span class="text-muted">提交了日报</span>
+                            <small class="text-muted">{{ r.report_date.strftime('%m-%d') if r.report_date else '' }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
+<!-- ===== 图表行 ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="chart-box">
             <div class="chart-title">任务状态分布</div>
-            <div id="chart-tasks" style="height:340px;"></div>
+            <div id="chart-tasks" style="height:280px;"></div>
         </div>
     </div>
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="chart-box">
-            <div class="chart-title">Bug 严重程度</div>
-            <div id="chart-bugs" style="height:340px;"></div>
+            <div class="chart-title">日报提交趋势 (近7天)</div>
+            <div id="chart-report" style="height:280px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-box">
+            <div class="chart-title">小组完成率对比</div>
+            <div id="chart-team" style="height:280px;"></div>
         </div>
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-4 col-md-2"><div class="stat-card bg-blue" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ teams|length }}</div><div class="stat-label">小组</div></div></div>
-    <div class="col-4 col-md-2"><div class="stat-card bg-indigo" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ students }}</div><div class="stat-label">学生</div></div></div>
-    <div class="col-4 col-md-2"><div class="stat-card bg-teal" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ ai_count }}</div><div class="stat-label">AI记录</div></div></div>
-    <div class="col-4 col-md-2"><div class="stat-card bg-green" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ reports_today }}</div><div class="stat-label">今日日报</div></div></div>
-    <div class="col-4 col-md-2"><div class="stat-card bg-red" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ bugs_total }}</div><div class="stat-label">Bug总数</div></div></div>
-    <div class="col-4 col-md-2"><div class="stat-card bg-blue" style="padding:16px;"><div class="stat-value" style="font-size:1.4rem;">{{ tasks_total }}</div><div class="stat-label">任务总数</div></div></div>
+<!-- ===== 未提交日报学生列表 ===== -->
+{% if missing_today %}
+<div class="panel">
+    <div class="panel-header">
+        <h5><i class="bi bi-exclamation-diamond text-danger"></i> 今日未提交日报 ({{ missing_count }}人)</h5>
+    </div>
+    <div class="panel-body">
+        <div class="missing-grid">
+            {% for m in missing_today[:12] %}
+            <span class="missing-chip">{{ m.name }}<small>{{ m.team }}</small></span>
+            {% endfor %}
+        </div>
+    </div>
 </div>
+{% endif %}
 {% endblock %}
+
 {% block extra_js %}
 <script>
 (function() {
-    echarts.init(document.getElementById('chart-tasks')).setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:['45%','72%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:3},data:{{ task_status_data|tojson }}}]});
-    echarts.init(document.getElementById('chart-bugs')).setOption({tooltip:{trigger:'item'},legend:{bottom:0},color:['#ef4444','#f97316','#f59e0b','#3b82f6'],series:[{type:'pie',radius:['45%','72%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:3},data:{{ bug_severity_data|tojson }}}]});
-    echarts.init(document.getElementById('chart-report')).setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:{{ report_dates|tojson }}},yAxis:{type:'value'},series:[{type:'line',smooth:true,lineStyle:{color:'#3b82f6',width:3},itemStyle:{color:'#3b82f6'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(59,130,246,0.3)'},{offset:1,color:'rgba(59,130,246,0.02)'}]}},data:{{ report_counts|tojson }}}]});
-    echarts.init(document.getElementById('chart-team')).setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},xAxis:{type:'category',data:{{ team_ranking|tojson }}.map(function(d){return d.name})},yAxis:{type:'value',max:100},series:[{type:'bar',itemStyle:{borderRadius:[4,4,0,0],color:'#10b981'},label:{show:true,position:'top',formatter:'{c}%'},data:{{ team_ranking|tojson }}.map(function(d){return d.rate})}]});
-    window.addEventListener('resize',function(){['chart-tasks','chart-bugs','chart-report','chart-team'].forEach(function(id){echarts.getInstanceByDom(document.getElementById(id)).resize()})});
+    var pieOption = {
+        tooltip: {trigger: 'item'},
+        series: [{
+            type: 'pie',
+            radius: ['50%', '75%'],
+            center: ['50%', '55%'],
+            itemStyle: {borderRadius: 4, borderColor: '#fff', borderWidth: 2},
+            label: {show: false},
+            emphasis: {label: {show: true, fontWeight: 'bold'}},
+            data: {{ task_status_data|tojson }}
+        }]
+    };
+    var lineOption = {
+        tooltip: {trigger: 'axis'},
+        grid: {top: 10, right: 10, bottom: 20, left: 35},
+        xAxis: {type: 'category', data: {{ report_dates|tojson }}, axisLine: {lineStyle: {color: '#cbd5e1'}}},
+        yAxis: {type: 'value', splitLine: {lineStyle: {color: '#f1f5f9'}}},
+        series: [{
+            type: 'line',
+            smooth: true,
+            lineStyle: {color: '#3b82f6', width: 2},
+            areaStyle: {color: {type: 'linear', x:0,y:0,x2:0,y2:1, colorStops: [{offset:0,color:'rgba(59,130,246,0.25)'},{offset:1,color:'rgba(59,130,246,0.02)'}]}},
+            data: {{ report_counts|tojson }}
+        }]
+    };
+    var barOption = {
+        tooltip: {trigger: 'axis', axisPointer: {type: 'shadow'}},
+        grid: {top: 10, right: 10, bottom: 20, left: 38},
+        xAxis: {type: 'category', data: {{ team_ranking[:8]|tojson }}.map(function(d){return d.name}), axisLabel: {fontSize: 11}},
+        yAxis: {type: 'value', max: 100, splitLine: {lineStyle: {color: '#f1f5f9'}}},
+        series: [{
+            type: 'bar',
+            itemStyle: {borderRadius: [4,4,0,0], color: '#10b981'},
+            data: {{ team_ranking[:8]|tojson }}.map(function(d){return d.rate}),
+            label: {show: true, position: 'top', fontSize: 10, formatter: '{c}%'}
+        }]
+    };
+
+    ['chart-tasks','chart-report','chart-team'].forEach(function(id, i) {
+        var dom = document.getElementById(id);
+        if (dom) {
+            var chart = echarts.init(dom);
+            var opt = [pieOption, lineOption, barOption][i];
+            chart.setOption(opt);
+            // 数据下钻：饼图点击 → 任务列表按状态筛选
+            if (i === 0) {
+                chart.on('click', function(params) {
+                    var statusMap = {'待开始':'todo','进行中':'in_progress','待测试':'to_test','已完成':'done','已延期':'delayed'};
+                    var s = statusMap[params.name];
+                    if (s) window.location.href = '/tasks/list?status=' + s;
+                });
+            }
+        }
+    });
 })();
 </script>
 {% endblock %}

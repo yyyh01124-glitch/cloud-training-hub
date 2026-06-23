@@ -4,17 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}云智实训管理平台{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=2.0" rel="stylesheet">
+    <script src="{{ url_for('static', filename='vendor/echarts.min.js') }}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
 {% if current_user.is_authenticated %}
 
-<button class="menu-toggle" onclick="toggleMobileSidebar()" aria-label="菜单">
-    <i class="bi bi-list"></i>
-</button>
 <div class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
 
 <aside class="sidebar" id="sidebar">
@@ -30,78 +28,178 @@
     </div>
 
     <nav class="sidebar-nav">
+        <!-- ===== 学生侧边栏 ===== -->
+        {% if current_user.role.name == 'student' %}
         <div class="sidebar-section">
-            <div class="sidebar-section-title">主菜单</div>
-            <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="首页">
-                <i class="bi bi-speedometer2"></i> <span class="item-text">首页</span>
+            <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="工作台">
+                <i class="bi bi-house-door"></i> <span class="item-text">我的工作台</span>
+            </a>
+        </div>
+        {% set has_class = user_classes and user_classes|length > 0 %}
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">我的班级</div>
+            <a href="{{ url_for('class.list_classes') }}" class="sidebar-item" data-tooltip="班级">
+                <i class="bi bi-mortarboard"></i> <span class="item-text">{{ '班级' if has_class else '加入班级' }}</span>
+                {% if not has_class %}<span class="menu-badge menu-badge-warn">未加入</span>{% endif %}
+            </a>
+        </div>
+        {% if has_class %}
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">实训日常</div>
+            <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="任务看板">
+                <i class="bi bi-columns-gap"></i> <span class="item-text">任务看板</span>
+            </a>
+            <a href="{{ url_for('report.list_reports') }}" class="sidebar-item" data-tooltip="日报">
+                <i class="bi bi-journal-text"></i> <span class="item-text">实训日报</span>
+            </a>
+            <a href="{{ url_for('bug.list_bugs') }}" class="sidebar-item" data-tooltip="Bug">
+                <i class="bi bi-bug"></i> <span class="item-text">Bug 管理</span>
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">团队协作</div>
+            <a href="{{ url_for('team.list_teams') }}" class="sidebar-item" data-tooltip="小组">
+                <i class="bi bi-people"></i> <span class="item-text">我的小组</span>
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">工具</div>
+            <a href="{{ url_for('ai.list_records') }}" class="sidebar-item" data-tooltip="AI记录">
+                <i class="bi bi-robot"></i> <span class="item-text">AI 记录</span>
+            </a>
+            <a href="{{ url_for('crawler.data_list') }}" class="sidebar-item" data-tooltip="爬虫数据">
+                <i class="bi bi-database"></i> <span class="item-text">爬虫数据</span>
             </a>
             <a href="{{ url_for('announcement.list_announcements') }}" class="sidebar-item" data-tooltip="公告">
                 <i class="bi bi-megaphone"></i> <span class="item-text">公告</span>
             </a>
-            {% if current_user.role.name in ('admin', 'teacher') %}
-            <a href="{{ url_for('score.list_scores') }}" class="sidebar-item" data-tooltip="评分管理">
-                <i class="bi bi-star"></i> <span class="item-text">评分管理</span>
-            </a>
-            {% endif %}
         </div>
+        {% endif %}
 
+        <!-- ===== 教师侧边栏 ===== -->
+        {% elif current_user.role.name == 'teacher' %}
         <div class="sidebar-section">
-            <div class="sidebar-section-title">项目管理</div>
-            <a href="{{ url_for('project.list_projects') }}" class="sidebar-item" data-tooltip="项目列表">
-                <i class="bi bi-kanban"></i> <span class="item-text">项目列表</span>
-            </a>
-            {% if current_user.role.name in ('admin', 'teacher') %}
-            <a href="{{ url_for('project.list_courses') }}" class="sidebar-item" data-tooltip="课程管理">
-                <i class="bi bi-book"></i> <span class="item-text">课程管理</span>
-            </a>
-            {% endif %}
-            <a href="{{ url_for('team.list_teams') }}" class="sidebar-item" data-tooltip="小组管理">
-                <i class="bi bi-people"></i> <span class="item-text">小组管理</span>
+            <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="监控台">
+                <i class="bi bi-speedometer2"></i> <span class="item-text">教学监控台</span>
             </a>
         </div>
-
         <div class="sidebar-section">
-            <div class="sidebar-section-title">工作区</div>
-            <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="任务看板">
+            <div class="sidebar-section-title">我的班级</div>
+            <a href="{{ url_for('class.list_classes') }}" class="sidebar-item" data-tooltip="班级">
+                <i class="bi bi-mortarboard"></i> <span class="item-text">班级管理</span>
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">日常管理</div>
+            <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="看板">
                 <i class="bi bi-columns-gap"></i> <span class="item-text">任务看板</span>
             </a>
-            {% if current_user.role.name in ('admin', 'teacher') %}
-            <a href="{{ url_for('task.teacher_overview') }}" class="sidebar-item" data-tooltip="任务总览">
+            <a href="{{ url_for('task.teacher_overview') }}" class="sidebar-item" data-tooltip="总览">
                 <i class="bi bi-bar-chart"></i> <span class="item-text">任务总览</span>
             </a>
-            {% endif %}
             <a href="{{ url_for('report.list_reports') }}" class="sidebar-item" data-tooltip="日报">
-                <i class="bi bi-journal-text"></i> <span class="item-text">日报</span>
+                <i class="bi bi-journal-text"></i> <span class="item-text">日报管理</span>
             </a>
-            <a href="{{ url_for('bug.list_bugs') }}" class="sidebar-item" data-tooltip="Bug 管理">
+            <a href="{{ url_for('report.missing_reports') }}" class="sidebar-item" data-tooltip="未提交">
+                <i class="bi bi-exclamation-triangle"></i> <span class="item-text">未提交名单</span>
+            </a>
+            <a href="{{ url_for('bug.list_bugs') }}" class="sidebar-item" data-tooltip="Bug">
                 <i class="bi bi-bug"></i> <span class="item-text">Bug 管理</span>
             </a>
         </div>
-
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">教学管理</div>
+            <a href="{{ url_for('team.list_teams') }}" class="sidebar-item" data-tooltip="小组">
+                <i class="bi bi-people"></i> <span class="item-text">小组管理</span>
+            </a>
+            <a href="{{ url_for('project.list_courses') }}" class="sidebar-item" data-tooltip="课程">
+                <i class="bi bi-book"></i> <span class="item-text">课程管理</span>
+            </a>
+            <a href="{{ url_for('project.list_projects') }}" class="sidebar-item" data-tooltip="项目">
+                <i class="bi bi-kanban"></i> <span class="item-text">项目管理</span>
+            </a>
+            <a href="{{ url_for('score.list_scores') }}" class="sidebar-item" data-tooltip="评分">
+                <i class="bi bi-star"></i> <span class="item-text">评分管理</span>
+            </a>
+        </div>
         <div class="sidebar-section">
             <div class="sidebar-section-title">工具</div>
             <a href="{{ url_for('crawler.data_list') }}" class="sidebar-item" data-tooltip="爬虫数据">
                 <i class="bi bi-database"></i> <span class="item-text">爬虫数据</span>
             </a>
-            <a href="{{ url_for('ai.list_records') }}" class="sidebar-item" data-tooltip="AI 记录">
+            <a href="{{ url_for('crawler.list_configs') }}" class="sidebar-item" data-tooltip="爬虫配置">
+                <i class="bi bi-gear"></i> <span class="item-text">爬虫配置</span>
+            </a>
+            <a href="{{ url_for('crawler.stats') }}" class="sidebar-item" data-tooltip="爬虫统计">
+                <i class="bi bi-pie-chart"></i> <span class="item-text">爬虫统计</span>
+            </a>
+            <a href="{{ url_for('ai.list_records') }}" class="sidebar-item" data-tooltip="AI">
                 <i class="bi bi-robot"></i> <span class="item-text">AI 记录</span>
             </a>
-            <a href="{{ url_for('ai.case_library') }}" class="sidebar-item" data-tooltip="提示词案例库">
+            <a href="{{ url_for('ai.case_library') }}" class="sidebar-item" data-tooltip="案例库">
                 <i class="bi bi-lightbulb"></i> <span class="item-text">提示词案例库</span>
             </a>
-            <a href="{{ url_for('ai.ai_stats') }}" class="sidebar-item" data-tooltip="AI使用统计">
-                <i class="bi bi-graph-up"></i> <span class="item-text">AI使用统计</span>
+            <a href="{{ url_for('announcement.list_announcements') }}" class="sidebar-item" data-tooltip="公告">
+                <i class="bi bi-megaphone"></i> <span class="item-text">公告</span>
             </a>
         </div>
 
-        {% if current_user.role.name == 'admin' %}
+        <!-- ===== 管理员侧边栏 ===== -->
+        {% else %}
+        <div class="sidebar-section">
+            <a href="{{ url_for('dashboard.index') }}" class="sidebar-item" data-tooltip="驾驶舱">
+                <i class="bi bi-speedometer2"></i> <span class="item-text">系统驾驶舱</span>
+            </a>
+        </div>
         <div class="sidebar-section">
             <div class="sidebar-section-title">系统管理</div>
-            <a href="{{ url_for('admin.users') }}" class="sidebar-item" data-tooltip="用户管理">
+            <a href="{{ url_for('admin.users') }}" class="sidebar-item" data-tooltip="用户">
                 <i class="bi bi-person-badge"></i> <span class="item-text">用户管理</span>
             </a>
-            <a href="{{ url_for('admin.logs') }}" class="sidebar-item" data-tooltip="登录日志">
-                <i class="bi bi-shield-check"></i> <span class="item-text">登录日志</span>
+            <a href="{{ url_for('class.list_classes') }}" class="sidebar-item" data-tooltip="班级">
+                <i class="bi bi-mortarboard"></i> <span class="item-text">班级管理</span>
+            </a>
+            <a href="{{ url_for('admin.logs') }}" class="sidebar-item" data-tooltip="日志">
+                <i class="bi bi-shield-check"></i> <span class="item-text">系统日志</span>
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">教学管理</div>
+            <a href="{{ url_for('task.board') }}" class="sidebar-item" data-tooltip="看板">
+                <i class="bi bi-columns-gap"></i> <span class="item-text">任务看板</span>
+            </a>
+            <a href="{{ url_for('task.teacher_overview') }}" class="sidebar-item" data-tooltip="总览">
+                <i class="bi bi-bar-chart"></i> <span class="item-text">任务总览</span>
+            </a>
+            <a href="{{ url_for('report.list_reports') }}" class="sidebar-item" data-tooltip="日报">
+                <i class="bi bi-journal-text"></i> <span class="item-text">日报管理</span>
+            </a>
+            <a href="{{ url_for('report.missing_reports') }}" class="sidebar-item" data-tooltip="未提交">
+                <i class="bi bi-exclamation-triangle"></i> <span class="item-text">未提交名单</span>
+            </a>
+            <a href="{{ url_for('bug.list_bugs') }}" class="sidebar-item" data-tooltip="Bug">
+                <i class="bi bi-bug"></i> <span class="item-text">Bug 管理</span>
+            </a>
+            <a href="{{ url_for('team.list_teams') }}" class="sidebar-item" data-tooltip="小组">
+                <i class="bi bi-people"></i> <span class="item-text">小组管理</span>
+            </a>
+            <a href="{{ url_for('project.list_courses') }}" class="sidebar-item" data-tooltip="课程">
+                <i class="bi bi-book"></i> <span class="item-text">课程管理</span>
+            </a>
+            <a href="{{ url_for('project.list_projects') }}" class="sidebar-item" data-tooltip="项目">
+                <i class="bi bi-kanban"></i> <span class="item-text">项目管理</span>
+            </a>
+            <a href="{{ url_for('score.list_scores') }}" class="sidebar-item" data-tooltip="评分">
+                <i class="bi bi-star"></i> <span class="item-text">评分管理</span>
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">其他</div>
+            <a href="{{ url_for('announcement.list_announcements') }}" class="sidebar-item" data-tooltip="公告">
+                <i class="bi bi-megaphone"></i> <span class="item-text">公告管理</span>
+            </a>
+            <a href="{{ url_for('admin.export_data', report_type='tasks') }}" class="sidebar-item" data-tooltip="导出">
+                <i class="bi bi-download"></i> <span class="item-text">数据导出</span>
             </a>
         </div>
         {% endif %}
@@ -109,25 +207,68 @@
 
     <div class="sidebar-footer">
         <a href="{{ url_for('auth.profile') }}" class="sidebar-user">
-            <div class="user-avatar">{{ current_user.real_name[0] }}</div>
+            <div class="user-avatar">
+                {% if current_user.avatar %}
+                <img src="{{ current_user.avatar }}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                {% else %}
+                {{ current_user.real_name[0] }}
+                {% endif %}
+            </div>
             <div class="user-info">
                 <div class="user-name">{{ current_user.real_name }}</div>
                 <div class="user-role">{{ roles[current_user.role.name] }}</div>
             </div>
         </a>
-        <a href="{{ url_for('auth.logout') }}" class="sidebar-item mt-2" data-tooltip="退出登录">
+        <a href="{{ url_for('notification.list_notifications') }}" class="sidebar-item" data-tooltip="通知">
+            <i class="bi bi-bell"></i> <span class="item-text">通知</span>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-item" data-tooltip="退出登录">
             <i class="bi bi-box-arrow-right"></i> <span class="item-text">退出登录</span>
+        </a>
+        <a href="#" class="sidebar-item" data-tooltip="切换主题" onclick="toggleDarkMode();return false;">
+            <i class="bi bi-moon-stars"></i> <span class="item-text">暗色模式</span>
         </a>
     </div>
 </aside>
 {% endif %}
 
 <div class="{% if current_user.is_authenticated %}main-content{% endif %}">
+    {% if current_user.is_authenticated %}
+    <!-- 顶部导航栏 -->
+    <header class="top-navbar">
+        <div class="top-nav-left">
+            <button class="menu-toggle" onclick="toggleMobileSidebar()" aria-label="菜单">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="top-nav-title">Cloud Training Hub</span>
+        </div>
+        <div class="top-nav-right">
+            <a href="{{ url_for('notification.list_notifications') }}" class="top-nav-btn" id="notifBell" title="通知">
+                <i class="bi bi-bell"></i>
+                <span class="notif-dot" id="notifDot" style="display:none"></span>
+            </a>
+            <div class="top-nav-user" onclick="this.parentElement.querySelector('.user-dropdown').classList.toggle('show')">
+                <div class="user-avatar-sm">
+                    {% if current_user.avatar %}<img src="{{ current_user.avatar }}" alt="">{% else %}{{ current_user.real_name[0] }}{% endif %}
+                </div>
+                <span class="user-name-sm">{{ current_user.real_name }}</span>
+                <i class="bi bi-chevron-down" style="font-size:0.65rem;"></i>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('auth.profile') }}"><i class="bi bi-person"></i> 个人信息</a>
+                    <a href="{{ url_for('auth.change_password') }}"><i class="bi bi-key"></i> 修改密码</a>
+                    <hr>
+                    <a href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> 退出登录</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    <div class="mb-3">
+    <div class="flash-container">
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        <div class="alert alert-{{ category }} alert-dismissible fade show flash-alert" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -155,8 +296,46 @@
     {% block content %}{% endblock %}
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script>
+// ---- Dark Mode ----
+(function() {
+    var dm = localStorage.getItem('dark-mode');
+    if (dm === 'true') document.body.classList.add('dark-mode');
+})();
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('dark-mode', document.body.classList.contains('dark-mode'));
+}
+
+// ---- Sidebar section collapse ----
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sidebar-section-title').forEach(function(el) {
+        var state = localStorage.getItem('sec-' + el.textContent.trim());
+        if (state === 'collapsed') { el.classList.add('collapsed'); el.parentElement.classList.add('collapsed'); }
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            el.classList.toggle('collapsed');
+            el.parentElement.classList.toggle('collapsed');
+            localStorage.setItem('sec-' + el.textContent.trim(), el.classList.contains('collapsed') ? 'collapsed' : '');
+        });
+    });
+});
+
+// ---- Notification polling ----
+document.addEventListener('DOMContentLoaded', function() {
+    function updateNotif() {
+        fetch('/notifications/unread-count')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var dot = document.getElementById('notifDot');
+                if (dot) dot.style.display = d.count > 0 ? 'block' : 'none';
+            }).catch(function(){});
+    }
+    updateNotif();
+    setInterval(updateNotif, 30000);
+});
+</script>
 <script>
 // ---- Sidebar ----
 
@@ -172,13 +351,13 @@ function toggleSidebar() {
     localStorage.setItem('sidebar-collapsed', sb.classList.contains('collapsed'));
 }
 
-// Restore sidebar state
 (function() {
     if (localStorage.getItem('sidebar-collapsed') === 'true') {
         var sb = document.getElementById('sidebar');
         if (sb) {
             sb.classList.add('collapsed');
-            document.getElementById('collapse-icon').classList.replace('bi-chevron-left', 'bi-chevron-right');
+            var icon = document.getElementById('collapse-icon');
+            if (icon) icon.classList.replace('bi-chevron-left', 'bi-chevron-right');
         }
     }
 })();
@@ -203,24 +382,21 @@ function toggleSidebar() {
 })();
 
 // ---- Mobile ----
-
 function toggleMobileSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.querySelector('.sidebar-overlay').classList.toggle('show');
 }
 
-// ---- Animated number counter ----
-
+// ---- Animated counters ----
 function animateCounters() {
     document.querySelectorAll('.stat-value[data-target]').forEach(function(el) {
         var target = parseInt(el.dataset.target);
         var duration = 800;
         var start = performance.now();
-
         function tick(now) {
             var elapsed = now - start;
             var progress = Math.min(elapsed / duration, 1);
-            var eased = 1 - Math.pow(1 - progress, 3); // ease-out
+            var eased = 1 - Math.pow(1 - progress, 3);
             var current = Math.round(target * eased);
             el.textContent = current;
             if (progress < 1) requestAnimationFrame(tick);
@@ -230,7 +406,6 @@ function animateCounters() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Add data-target to stat values for animation
     document.querySelectorAll('.stat-value').forEach(function(el) {
         var num = parseInt(el.textContent);
         if (!isNaN(num)) {
@@ -238,16 +413,21 @@ document.addEventListener('DOMContentLoaded', function() {
             el.textContent = '0';
         }
     });
-    // Delay to let page render, then animate
     setTimeout(animateCounters, 150);
+
+    // Flash auto-dismiss
+    setTimeout(function() {
+        document.querySelectorAll('.flash-alert').forEach(function(el) {
+            var bsAlert = bootstrap.Alert.getInstance(el);
+            if (bsAlert) bsAlert.close();
+        });
+    }, 4000);
 });
 
-// ---- Kanban drag-drop enhancements ----
-
+// ---- Kanban drag-drop ----
 document.addEventListener('DOMContentLoaded', function() {
     var cards = document.querySelectorAll('.kanban-card');
     var columns = document.querySelectorAll('.kanban-column');
-
     cards.forEach(function(card) {
         card.addEventListener('dragstart', function(e) {
             e.dataTransfer.setData('text/plain', this.dataset.taskId);
@@ -258,7 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
             columns.forEach(function(c) { c.classList.remove('drag-over'); });
         });
     });
-
     columns.forEach(function(col) {
         col.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -273,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var taskId = e.dataTransfer.getData('text/plain');
             var newStatus = this.dataset.status;
             var card = document.querySelector('.kanban-card[data-task-id="' + taskId + '"]');
-
             fetch('/tasks/' + taskId + '/status', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -290,7 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 col.appendChild(card);
                             }
                             card.classList.remove('dropped');
-                            // Update column counts
                             updateKanbanCounts();
                         }, 350);
                     }
@@ -298,7 +475,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-
     function updateKanbanCounts() {
         columns.forEach(function(col) {
             var badge = col.querySelector('.kanban-column-header .badge.rounded-pill');

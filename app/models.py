@@ -80,9 +80,45 @@ class LoginLog(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now())
 
 
+class Class(db.Model):
+    __tablename__ = 'classes'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), default='')
+    invite_code = db.Column(db.String(10), unique=True, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    is_archived = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=func.now())
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+
+    members = db.relationship('ClassMember', backref='class_', lazy='dynamic', passive_deletes=True)
+    courses = db.relationship('Course', backref='class_', lazy='dynamic')
+    teams = db.relationship('Team', backref='class_', lazy='dynamic')
+    announcements = db.relationship('Announcement', backref='class_', lazy='dynamic')
+
+
+class ClassMember(db.Model):
+    __tablename__ = 'class_members'
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    role_in_class = db.Column(
+        SAEnum('teacher', 'student', name='class_member_role'),
+        default='student',
+        nullable=False
+    )
+    joined_at = db.Column(db.DateTime, server_default=func.now())
+
+    __table_args__ = (
+        db.UniqueConstraint('class_id', 'user_id', name='uk_class_user'),
+    )
+    user = db.relationship('User', backref='class_memberships', lazy='joined')
+
+
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'))
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
@@ -124,6 +160,7 @@ class Team(db.Model):
     __tablename__ = 'teams'
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id', ondelete='CASCADE'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'))
     name = db.Column(db.String(100), nullable=False)
     leader_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     description = db.Column(db.String(500), default='')
@@ -143,7 +180,7 @@ class TeamMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    role_in_team = db.Column(db.String(50), nullable=False, default='member')
+    role_in_team = db.Column(db.String(200), nullable=False, default='member')
     joined_at = db.Column(db.DateTime, server_default=func.now())
 
     __table_args__ = (
@@ -174,6 +211,7 @@ class Task(db.Model):
     completion_note = db.Column(db.Text)
     screenshot_url = db.Column(db.String(500), default='')
     related_bug_id = db.Column(db.Integer, db.ForeignKey('bugs.id', ondelete='SET NULL'))
+    deliverables = db.Column(db.JSON)  # [{type, url, name, uploaded_at}]
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -206,19 +244,23 @@ class DailyReport(db.Model):
 class Bug(db.Model):
     __tablename__ = 'bugs'
     id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id', ondelete='SET NULL'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='SET NULL'))
     title = db.Column(db.String(300), nullable=False)
     description = db.Column(db.Text)
     repro_steps = db.Column(db.Text)
     expected_result = db.Column(db.Text)
     actual_result = db.Column(db.Text)
     screenshot_url = db.Column(db.String(500), default='')
-    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     assignee_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     module = db.Column(db.String(100), default='')
     severity = db.Column(
         SAEnum('fatal', 'major', 'normal', 'minor', 'suggestion', name='bug_severity'),
         default='normal'
     )
+    estimated_hours = db.Column(db.Numeric(5, 1), default=0)
+    actual_hours = db.Column(db.Numeric(5, 1), default=0)
     status = db.Column(
         SAEnum('new', 'confirmed', 'fixing', 'fixed', 'closed', 'wontfix', name='bug_status'),
         default='new'
@@ -230,6 +272,8 @@ class Bug(db.Model):
 
     related_tasks = db.relationship('Task', backref='related_bug', lazy='dynamic',
                                      foreign_keys='Task.related_bug_id')
+    project = db.relationship('Project', backref=db.backref('bugs', lazy='dynamic'))
+    team = db.relationship('Team', backref=db.backref('bugs', lazy='dynamic'))
 
 
 class CrawlerConfig(db.Model):
@@ -326,12 +370,46 @@ class SystemLog(db.Model):
 class Announcement(db.Model):
     __tablename__ = 'announcements'
     id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'))
     title = db.Column(db.String(300), nullable=False)
     content = db.Column(db.Text)
     publisher_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     is_pinned = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class TeamDocument(db.Model):
+    __tablename__ = 'team_documents'
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column(db.String(300), nullable=False)
+    doc_category = db.Column(
+        SAEnum('requirement', 'design', 'database', 'test_report',
+               'deploy_doc', 'personal_summary', 'ppt', 'other',
+               name='doc_category'),
+        default='other'
+    )
+    file_url = db.Column(db.String(500), nullable=False)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    created_at = db.Column(db.DateTime, server_default=func.now())
+
+    team = db.relationship('Team', backref=db.backref('documents', lazy='dynamic', passive_deletes=True))
+    uploader = db.relationship('User', backref='uploaded_docs')
+
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # task_assigned, report_reviewed, bug_assigned, task_overdue, announcement
+    title = db.Column(db.String(300), nullable=False)
+    content = db.Column(db.String(500), default='')
+    link = db.Column(db.String(300), default='')
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=func.now())
+
+    user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic'))
 
 
 @login_manager.user_loader

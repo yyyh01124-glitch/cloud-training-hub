@@ -7,6 +7,9 @@
         <div>
             <a href="{{ url_for('project.edit_course', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
             <a href="{{ url_for('project.create_project') }}" class="btn btn-success btn-sm">新建项目</a>
+            <form method="post" action="{{ url_for('project.clone_course', course_id=course.id) }}" class="d-inline" onsubmit="return confirm('克隆此课程的结构（不含具体任务）？')">
+                <button type="submit" class="btn btn-outline-info btn-sm"><i class="bi bi-copy"></i> 克隆</button>
+            </form>
             <form method="post" action="{{ url_for('project.delete_course', course_id=course.id) }}" class="d-inline" onsubmit="return confirm('确认删除此课程？将同时删除所有关联项目。')">
                 <button type="submit" class="btn btn-outline-danger btn-sm">删除</button>
             </form>

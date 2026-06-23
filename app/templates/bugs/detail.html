@@ -1,44 +1,90 @@
 {% extends "base.html" %}
 {% from "_macros.html" import bug_severity_badge, bug_status_badge %}
 {% block title %}{{ bug.title }}{% endblock %}
+{% block page_title_bar %}{{ bug.title }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('bug.list_bugs') }}">Bug管理</a> <span>/</span> {{ bug.title }}{% endblock %}
+{% block top_actions %}
+<a href="{{ url_for('bug.edit_bug', bug_id=bug.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+{% if current_user.role.name in ('admin','teacher') %}
+<form method="post" action="{{ url_for('bug.delete_bug', bug_id=bug.id) }}" class="d-inline" onsubmit="return confirm('确认删除？')"><button class="btn btn-outline-danger btn-sm">删除</button></form>
+{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between mb-3">
-        <h3>{{ bug.title }}</h3>
-        <div>
-            <a href="{{ url_for('bug.edit_bug', bug_id=bug.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
-            {% if current_user.role.name in ('admin','teacher') %}
-            <form method="post" action="{{ url_for('bug.delete_bug', bug_id=bug.id) }}" class="d-inline" onsubmit="return confirm('确认删除？')"><button class="btn btn-outline-danger btn-sm">删除</button></form>
-            {% endif %}
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-card-text"></i> 描述</h5></div>
+            <div class="panel-body"><p>{{ bug.description or '暂无描述' }}</p></div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-md-8">
-            <div class="detail-section"><h5>描述</h5><p>{{ bug.description }}</p></div>
-            <div class="detail-section"><h5>复现步骤</h5><pre>{{ bug.repro_steps }}</pre></div>
-            <div class="detail-section"><h5>解决方案</h5><p>{{ bug.solution or '暂无' }}</p></div>
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-list-ol"></i> 复现步骤</h5></div>
+            <div class="panel-body"><pre>{{ bug.repro_steps or '暂无' }}</pre></div>
         </div>
-        <div class="col-md-4">
-            <div class="detail-section">
-                <h5>详情</h5>
-                <p>严重程度: {{ bug_severity_badge(bug.severity) }}</p>
-                <p>状态: {{ bug_status_badge(bug.status) }}</p>
-                <p>模块: {{ bug.module }}</p>
-                <p>提出人: {{ bug.reporter.real_name }}</p>
-                <p>负责人: {{ bug.assignee.real_name if bug.assignee else '未分配' }}</p>
-                <p>创建: {{ bug.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                {% if bug.closed_at %}<p>关闭: {{ bug.closed_at.strftime('%Y-%m-%d %H:%M') }}</p>{% endif %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="panel">
+                    <div class="panel-header"><h5><i class="bi bi-check-circle"></i> 期望结果</h5></div>
+                    <div class="panel-body"><p>{{ bug.expected_result or '暂无' }}</p></div>
+                </div>
             </div>
-            <div class="detail-section">
-                <h5>状态操作</h5>
+            <div class="col-md-6">
+                <div class="panel">
+                    <div class="panel-header"><h5><i class="bi bi-x-circle"></i> 实际结果</h5></div>
+                    <div class="panel-body"><p>{{ bug.actual_result or '暂无' }}</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-lightbulb"></i> 解决方案</h5></div>
+            <div class="panel-body"><p>{{ bug.solution or '暂无' }}</p></div>
+        </div>
+        {% if bug.screenshot_url %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-image"></i> 截图</h5></div>
+            <div class="panel-body">
+                <img src="/{{ bug.screenshot_url }}" alt="Bug截图" class="img-fluid rounded" style="max-width:100%;">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-info-circle"></i> 详情</h5></div>
+            <div class="panel-body">
+                <div class="mb-2">严重程度: {{ bug_severity_badge(bug.severity) }}</div>
+                <div class="mb-2">状态: {{ bug_status_badge(bug.status) }}</div>
+                <div class="mb-2">模块: <strong>{{ bug.module or '未指定' }}</strong></div>
+                <div class="mb-2">项目: {{ bug.project.name if bug.project else '未指定' }}</div>
+                <div class="mb-2">小组: {{ bug.team.name if bug.team else '未指定' }}</div>
+                <div class="mb-2">提出人: <strong>{{ bug.reporter.real_name }}</strong></div>
+                <div class="mb-2">负责人: <strong>{{ bug.assignee.real_name if bug.assignee else '未分配' }}</strong></div>
+                <hr>
+                <div class="mb-2">预计工时: <strong>{{ bug.estimated_hours or 0 }}h</strong></div>
+                <div class="mb-2">实际工时: <strong>{{ bug.actual_hours or 0 }}h</strong></div>
+                <hr>
+                <p class="text-muted small mb-1">创建: {{ bug.created_at.strftime('%Y-%m-%d %H:%M') if bug.created_at else '-' }}</p>
+                <p class="text-muted small mb-1">更新: {{ bug.updated_at.strftime('%Y-%m-%d %H:%M') if bug.updated_at else '-' }}</p>
+                {% if bug.closed_at %}<p class="text-muted small mb-0">关闭: {{ bug.closed_at.strftime('%Y-%m-%d %H:%M') }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-arrow-left-right"></i> 状态操作</h5></div>
+            <div class="panel-body">
                 {% set transitions = {'new': ['confirmed','wontfix'], 'confirmed': ['fixing','wontfix'], 'fixing': ['fixed','wontfix'], 'fixed': ['closed']} %}
                 {% if bug.status in transitions and transitions[bug.status] %}
+                <div class="d-flex flex-wrap gap-1">
                 {% for s in transitions[bug.status] %}
                 <form method="post" action="{{ url_for('bug.update_status', bug_id=bug.id) }}" class="d-inline">
                     <input type="hidden" name="status" value="{{ s }}">
-                    <button class="btn btn-sm btn-outline-info mb-1">{{ bug_statuses[s] }}</button>
+                    <button class="btn btn-sm btn-outline-info">{{ bug_statuses[s] }}</button>
                 </form>
                 {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">当前状态无法变更</p>
                 {% endif %}
             </div>
         </div>

@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from datetime import date
 from app.extensions import db
-from app.models import DailyReport, Team
+from app.models import DailyReport, Team, ClassMember
+from app.utils.decorators import log_activity, send_notification
 
 report_bp = Blueprint('report', __name__)
 
@@ -17,6 +18,16 @@ def list_reports():
     query = DailyReport.query
     if current_user.role.name == 'student':
         query = query.filter_by(user_id=current_user.id)
+    elif current_user.role.name == 'teacher':
+        # 教师只看自己班级学生的日报
+        class_ids = [m[0] for m in db.session.query(ClassMember.class_id).filter_by(
+            user_id=current_user.id, role_in_class='teacher').all()]
+        student_ids = [m[0] for m in db.session.query(ClassMember.user_id).filter(
+            ClassMember.class_id.in_(class_ids), ClassMember.role_in_class == 'student').all()] if class_ids else []
+        if student_ids:
+            query = query.filter(DailyReport.user_id.in_(student_ids))
+        else:
+            query = query.filter(DailyReport.id == -1)  # no results
     if team_id:
         query = query.filter_by(team_id=team_id)
     if report_date:
@@ -53,6 +64,17 @@ def create_report():
         )
         db.session.add(report)
         db.session.commit()
+        log_activity('create', 'report', 'DailyReport', report.id, {'report_date': str(report.report_date)})
+        # 通知班级教师
+        from app.utils.decorators import send_notification as sn
+        class_ids = [m[0] for m in db.session.query(ClassMember.class_id).filter_by(
+            user_id=current_user.id, role_in_class='student').all()]
+        if class_ids:
+            teacher_ids = [m[0] for m in db.session.query(ClassMember.user_id).filter(
+                ClassMember.class_id.in_(class_ids), ClassMember.role_in_class == 'teacher').all()]
+            for tid in teacher_ids:
+                sn(tid, 'report_submitted', f'{current_user.real_name} 提交了日报',
+                   f'{current_user.real_name} 提交了 {today} 的日报', url_for('report.list_reports'))
         flash('日报提交成功', 'success')
         return redirect(url_for('report.list_reports'))
     return render_template('reports/form.html')
@@ -77,6 +99,10 @@ def edit_report(report_id):
         return redirect(url_for('report.list_reports'))
     if current_user.role.name == 'student' and report.user_id != current_user.id:
         flash('只能编辑自己的日报', 'danger')
+        return redirect(url_for('report.list_reports'))
+    # 学生只能编辑当天的日报
+    if current_user.role.name == 'student' and report.report_date != date.today():
+        flash('只能编辑当天的日报', 'danger')
         return redirect(url_for('report.list_reports'))
 
     if request.method == 'POST':
@@ -103,10 +129,22 @@ def review_report(report_id):
     if not report:
         flash('日报不存在', 'danger')
         return redirect(url_for('report.list_reports'))
+    # 教师只能点评自己班级学生的日报
+    if current_user.role.name == 'teacher':
+        student_class_ids = [m[0] for m in db.session.query(ClassMember.class_id).filter_by(
+            user_id=report.user_id, role_in_class='student').all()]
+        teacher_class_ids = [m[0] for m in db.session.query(ClassMember.class_id).filter_by(
+            user_id=current_user.id, role_in_class='teacher').all()]
+        if not set(student_class_ids) & set(teacher_class_ids):
+            flash('你只能点评自己班级学生的日报', 'danger')
+            return redirect(url_for('report.list_reports'))
     if request.method == 'POST':
         report.teacher_comment = request.form.get('teacher_comment', '')
         report.is_excellent = request.form.get('is_excellent') == 'on'
         db.session.commit()
+        log_activity('review', 'report', 'DailyReport', report.id, {'is_excellent': request.form.get('is_excellent') == 'on'})
+        send_notification(report.user_id, 'report_reviewed', f'日报已被点评',
+                          f'教师点评了你 {report.report_date} 的日报', url_for('report.report_detail', report_id=report.id))
         flash('点评已保存', 'success')
         return redirect(url_for('report.report_detail', report_id=report.id))
     return render_template('reports/review.html', report=report)
@@ -136,7 +174,15 @@ def missing_reports():
     from datetime import date
     from app.models import User
     today = date.today()
-    students = User.query.filter(User.role.has(name='student'), User.is_active == True).all()
+    # 教师只看自己班级的学生
+    if current_user.role.name == 'teacher':
+        class_ids = [m[0] for m in db.session.query(ClassMember.class_id).filter_by(
+            user_id=current_user.id, role_in_class='teacher').all()]
+        student_ids = [m[0] for m in db.session.query(ClassMember.user_id).filter(
+            ClassMember.class_id.in_(class_ids), ClassMember.role_in_class == 'student').all()] if class_ids else []
+        students = User.query.filter(User.id.in_(student_ids), User.is_active == True).all() if student_ids else []
+    else:
+        students = User.query.filter(User.role.has(name='student'), User.is_active == True).all()
     missing = []
     for s in students:
         r = DailyReport.query.filter_by(user_id=s.id, report_date=today).first()

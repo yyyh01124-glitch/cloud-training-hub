@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ cls.name }}{% endblock %}
+{% block page_title_bar %}{{ cls.name }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('class.list_classes') }}">班级</a> <span>/</span> {{ cls.name }}{% endblock %}
+
+{% block top_actions %}
+{% if current_user.role.name == 'student' %}
+<form method="post" action="{{ url_for('class.leave_class', class_id=cls.id) }}" style="display:inline" onsubmit="return confirm('确定退出该班级？')">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-left"></i> 退出班级</button>
+</form>
+{% endif %}
+{% if current_user.role.name in ('admin', 'teacher') %}
+{% if not cls.is_archived %}
+<a href="{{ url_for('class.edit_class', class_id=cls.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+<form method="post" action="{{ url_for('class.new_invite_code', class_id=cls.id) }}" style="display:inline">
+    <button class="btn btn-outline-info btn-sm"><i class="bi bi-arrow-repeat"></i> 新邀请码</button>
+</form>
+{% endif %}
+<form method="post" action="{{ url_for('class.toggle_archive', class_id=cls.id) }}" style="display:inline">
+    <button class="btn btn-sm {{ 'btn-outline-warning' if not cls.is_archived else 'btn-outline-success' }}">
+        <i class="bi bi-{{ 'archive' if not cls.is_archived else 'arrow-repeat' }}"></i>
+        {{ '归档' if not cls.is_archived else '恢复' }}
+    </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- 基本信息 -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="mini-stat bg-blue"><div class="mini-stat-icon"><i class="bi bi-people"></i></div><div class="mini-stat-num">{{ student_count }}</div><div class="mini-stat-label">学生</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mini-stat bg-indigo"><div class="mini-stat-icon"><i class="bi bi-person-badge"></i></div><div class="mini-stat-num">{{ teacher_count }}</div><div class="mini-stat-label">教师</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mini-stat bg-teal"><div class="mini-stat-icon"><i class="bi bi-book"></i></div><div class="mini-stat-num">{{ courses|length }}</div><div class="mini-stat-label">课程</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mini-stat bg-green"><div class="mini-stat-icon"><i class="bi bi-flag"></i></div><div class="mini-stat-num">{{ teams|length }}</div><div class="mini-stat-label">小组</div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- 成员列表 -->
+    <div class="col-lg-6">
+        <div class="panel">
+            <div class="panel-header d-flex justify-content-between">
+                <h5><i class="bi bi-people-fill"></i> 班级成员 ({{ members|length }})</h5>
+                {% if current_user.role.name in ('admin', 'teacher') %}
+                <span><i class="bi bi-key"></i> 邀请码：<code class="text-primary fs-6">{{ cls.invite_code }}</code></span>
+                {% endif %}
+            </div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>姓名</th><th>用户名</th><th>角色</th><th>加入时间</th><th></th></tr></thead>
+                    <tbody>
+                        {% for m in members %}
+                        <tr>
+                            <td><strong>{{ m.user.real_name }}</strong></td>
+                            <td class="text-muted">{{ m.user.username }}</td>
+                            <td>
+                                {% if m.role_in_class == 'teacher' %}
+                                <span class="badge bg-primary">教师</span>
+                                {% else %}
+                                <span class="badge bg-info">学生</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ m.joined_at.strftime('%m-%d') if m.joined_at else '' }}</td>
+                            <td>
+                                {% if current_user.role.name in ('admin', 'teacher') and m.user_id != current_user.id %}
+                                <form method="post" action="{{ url_for('class.remove_member', class_id=cls.id, user_id=m.user_id) }}" onsubmit="return confirm('确定移除该成员？')">
+                                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 课程 -->
+    <div class="col-lg-6">
+        <div class="panel">
+            <div class="panel-header d-flex justify-content-between">
+                <h5><i class="bi bi-book"></i> 课程</h5>
+                {% if current_user.role.name in ('admin', 'teacher') %}
+                <a href="{{ url_for('project.create_course') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i></a>
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if courses %}
+                <div class="activity-feed">
+                    {% for c in courses %}
+                    <div class="activity-item">
+                        <i class="bi bi-book text-blue"></i>
+                        <a href="{{ url_for('project.course_detail', course_id=c.id) }}">{{ c.name }}</a>
+                        <small>{{ c.projects.count() }}个项目</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm"><p class="text-muted">暂无课程</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 小组 -->
+        {% if teams %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-flag"></i> 小组</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>名称</th><th>组长</th><th>成员</th></tr></thead>
+                    <tbody>
+                        {% for t in teams %}
+                        <tr>
+                            <td><a href="{{ url_for('team.team_detail', team_id=t.id) }}">{{ t.name }}</a></td>
+                            <td>{{ t.leader.real_name if t.leader else '-' }}</td>
+                            <td>{{ t.members.count() }}人</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{{ student.real_name }} - 学生画像{% endblock %}
+{% block page_title_bar %}学生画像：{{ student.real_name }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('admin.users') }}">用户管理</a> <span>/</span> {{ student.real_name }}{% endblock %}
+
+{% block content %}
+<!-- 基本信息 -->
+<div class="welcome-bar mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <div class="user-avatar" style="width:56px;height:56px;min-width:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;font-weight:700;">
+            {% if student.avatar %}<img src="{{ student.avatar }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">{% else %}{{ student.real_name[0] }}{% endif %}
+        </div>
+        <div>
+            <h2 class="mb-0">{{ student.real_name }}</h2>
+            <p class="mb-0 text-muted">
+                @{{ student.username }}
+                {% if class_info %}&nbsp;|&nbsp; <i class="bi bi-mortarboard"></i> {{ class_info.name }}{% endif %}
+                {% if team_info %}&nbsp;|&nbsp; <i class="bi bi-people"></i> {{ team_info.name }}（{{ team_roles.get(team_info.role, team_info.role) }}）{% endif %}
+            </p>
+        </div>
+    </div>
+    <div>
+        {% if scores %}<span class="badge bg-primary fs-6">均分 {{ avg_score }}</span>{% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- 左栏 -->
+    <div class="col-lg-7">
+        <!-- 统计卡片 -->
+        <div class="row g-2 mb-3">
+            <div class="col-4"><div class="mini-stat bg-blue"><div class="mini-stat-num">{{ my_tasks_total }}</div><div class="mini-stat-label">任务总数</div></div></div>
+            <div class="col-4"><div class="mini-stat bg-green"><div class="mini-stat-num">{{ my_tasks_done }}</div><div class="mini-stat-label">已完成</div></div></div>
+            <div class="col-4"><div class="mini-stat bg-red"><div class="mini-stat-num">{{ my_tasks_delayed }}</div><div class="mini-stat-label">已延期</div></div></div>
+            <div class="col-4"><div class="mini-stat bg-amber"><div class="mini-stat-num">{{ report_count }}</div><div class="mini-stat-label">日报</div></div></div>
+            <div class="col-4"><div class="mini-stat bg-indigo"><div class="mini-stat-num">{{ bugs_reported_count }}</div><div class="mini-stat-label">提交Bug</div></div></div>
+            <div class="col-4"><div class="mini-stat bg-teal"><div class="mini-stat-num">{{ ai_count }}</div><div class="mini-stat-label">AI记录</div></div></div>
+        </div>
+
+        <!-- 任务完成率 -->
+        {% if my_tasks_total > 0 %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-bar-chart"></i> 任务进度</h5></div>
+            <div class="panel-body">
+                <div class="progress-rings-row">
+                    <div class="progress-ring-item">
+                        <div class="ring" style="--p:{{ completion_rate }}">
+                            <svg viewBox="0 0 36 36"><path d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32" stroke="#e2e8f0" stroke-width="3" fill="none"/><path d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32" stroke="url(#grad2)" stroke-width="3" fill="none" stroke-dasharray="{{ completion_rate }}, 100" stroke-linecap="round"/><defs><linearGradient id="grad2"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs></svg>
+                            <span class="ring-value">{{ completion_rate }}%</span>
+                        </div>
+                        <span class="ring-label">完成率</span>
+                    </div>
+                    <div class="progress-stats-grid">
+                        <div class="ps-item"><span class="ps-num text-blue">{{ my_tasks_todo }}</span><span class="ps-label">待开始</span></div>
+                        <div class="ps-item"><span class="ps-num text-primary">{{ my_tasks_in_progress }}</span><span class="ps-label">进行中</span></div>
+                        <div class="ps-item"><span class="ps-num text-success">{{ my_tasks_done }}</span><span class="ps-label">已完成</span></div>
+                        <div class="ps-item"><span class="ps-num text-danger">{{ my_tasks_delayed }}</span><span class="ps-label">已延期</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 最近日报 -->
+        {% if my_reports %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-journal-text"></i> 最近日报</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>日期</th><th>内容</th><th>自评</th><th>教师点评</th></tr></thead>
+                    <tbody>
+                        {% for r in my_reports %}
+                        <tr>
+                            <td>{{ r.report_date }}</td>
+                            <td class="text-truncate" style="max-width:200px;">{{ r.completed_content[:60] }}</td>
+                            <td>{{ r.self_score }}/5</td>
+                            <td class="text-truncate" style="max-width:120px;">{{ r.teacher_comment or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 右栏：活动时间线 + 评分详细 -->
+    <div class="col-lg-5">
+        <!-- 小组信息 -->
+        {% if team_info %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-people"></i> 小组信息</h5></div>
+            <div class="panel-body">
+                <p><strong>{{ team_info.name }}</strong></p>
+                <p>项目：{{ team_info.project }}</p>
+                <p>职责：{{ team_roles.get(team_info.role, team_info.role) }}</p>
+                <div class="progress-bar-mini"><div class="progress-bar-fill bg-green" style="width:{{ team_info.task_rate }}%"></div></div>
+                <small>小组完成率 {{ team_info.task_rate }}%</small>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 评分详细 -->
+        {% if scores %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-star"></i> 评分明细</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>类别</th><th>分数</th><th>满分</th></tr></thead>
+                    <tbody>
+                        {% for s in scores %}
+                        <tr><td>{{ s.category }}</td><td><strong>{{ s.score }}</strong></td><td>{{ s.max_score }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 活动时间线 -->
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-clock-history"></i> 最近活动</h5></div>
+            <div class="panel-body">
+                {% if activities %}
+                <div class="activity-feed">
+                    {% for act in activities %}
+                    <div class="activity-item">
+                        {% if act.type == 'report' %}<i class="bi bi-journal-check text-green"></i>
+                        {% elif act.type == 'task_done' %}<i class="bi bi-check2-circle text-blue"></i>
+                        {% else %}<i class="bi bi-bug text-red"></i>{% endif %}
+                        <span>{{ act.desc }}</span>
+                        <small>{{ act.time.strftime('%m-%d %H:%M') if act.time else '' }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">暂无活动</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bug 统计 -->
+        <div class="row g-2">
+            <div class="col-6"><div class="mini-stat bg-red"><div class="mini-stat-num">{{ bugs_reported_count }}</div><div class="mini-stat-label">提交的Bug</div></div></div>
+            <div class="col-6"><div class="mini-stat bg-green"><div class="mini-stat-num">{{ bugs_fixed }}</div><div class="mini-stat-label">修复的Bug</div></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

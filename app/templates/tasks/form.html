@@ -5,30 +5,15 @@
     <h3>{{ '编辑' if task else '创建' }}任务</h3>
     <form method="post" enctype="multipart/form-data">
         <div class="row">
-            <div class="col-md-8 mb-3">
-                <label for="title" class="form-label">任务标题</label>
+            <div class="col-md-6 mb-3">
+                <label for="title" class="form-label">任务标题 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="title" name="title" value="{{ task.title if task else '' }}" required>
             </div>
-            <div class="col-md-4 mb-3">
-                <label for="project_id" class="form-label">所属项目</label>
+            <div class="col-md-3 mb-3">
+                <label for="project_id" class="form-label">所属项目 <span class="text-danger">*</span></label>
                 <select class="form-select" id="project_id" name="project_id" required>
                     {% for p in projects %}
                     <option value="{{ p.id }}" {{ 'selected' if task and task.project_id == p.id }}>{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        <div class="mb-3">
-            <label for="description" class="form-label">任务描述</label>
-            <textarea class="form-control" id="description" name="description" rows="3">{{ task.description if task else '' }}</textarea>
-        </div>
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <label for="assignee_id" class="form-label">负责人</label>
-                <select class="form-select" id="assignee_id" name="assignee_id">
-                    <option value="">选择负责人</option>
-                    {% for u in users %}
-                    <option value="{{ u.id }}" {{ 'selected' if task and task.assignee_id == u.id }}>{{ u.real_name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -38,6 +23,21 @@
                     <option value="">选择小组</option>
                     {% for t in teams %}
                     <option value="{{ t.id }}" {{ 'selected' if task and task.team_id == t.id }}>{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">任务描述</label>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ task.description if task else '' }}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-2 mb-3">
+                <label for="assignee_id" class="form-label">负责人</label>
+                <select class="form-select" id="assignee_id" name="assignee_id">
+                    <option value="">未分配</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {{ 'selected' if task and task.assignee_id == u.id }}>{{ u.real_name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -59,31 +59,88 @@
             </div>
             <div class="col-md-2 mb-3">
                 <label for="estimated_hours" class="form-label">预计工时(h)</label>
-                <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" step="0.5" value="{{ task.estimated_hours if task else '' }}">
+                <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" step="0.5" value="{{ task.estimated_hours if task else '' }}" placeholder="0">
             </div>
-        </div>
-        {% if task %}
-        <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-2 mb-3">
                 <label for="actual_hours" class="form-label">实际工时(h)</label>
-                <input type="number" class="form-control" id="actual_hours" name="actual_hours" step="0.5" value="{{ task.actual_hours if task else '' }}">
+                <input type="number" class="form-control" id="actual_hours" name="actual_hours" step="0.5" value="{{ task.actual_hours if task else '' }}" placeholder="0">
             </div>
-            <div class="col-md-6 mb-3">
-                <label for="completion_note" class="form-label">完成说明</label>
-                <textarea class="form-control" id="completion_note" name="completion_note" rows="2">{{ task.completion_note if task else '' }}</textarea>
+            <div class="col-md-2 mb-3">
+                <label for="related_bug_id" class="form-label">关联Bug</label>
+                <select class="form-select" id="related_bug_id" name="related_bug_id">
+                    <option value="">无</option>
+                    {% for b in bugs %}
+                    <option value="{{ b.id }}" {{ 'selected' if task and task.related_bug_id == b.id }}>
+                        {{ b.title }}{% if b.module %} [{{ b.module }}]{% endif %}{% if b.severity %} {{ b.severity }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
-        {% endif %}
         <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 <label for="start_date" class="form-label">开始日期</label>
                 <input type="date" class="form-control" id="start_date" name="start_date" value="{{ task.start_date if task else '' }}">
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 <label for="due_date" class="form-label">截止日期</label>
                 <input type="date" class="form-control" id="due_date" name="due_date" value="{{ task.due_date if task else '' }}">
             </div>
+            <div class="col-md-3 mb-3">
+                <label for="screenshot" class="form-label">相关截图</label>
+                {% if task and task.screenshot_url %}
+                <div class="mb-1"><img src="/{{ task.screenshot_url }}" alt="截图" style="max-width:200px;max-height:80px;border-radius:6px;"></div>
+                {% endif %}
+                <input type="file" class="form-control" id="screenshot" name="screenshot" accept="image/*">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="completion_note" class="form-label">完成说明</label>
+                <textarea class="form-control" id="completion_note" name="completion_note" rows="2" placeholder="任务完成情况说明">{{ task.completion_note if task else '' }}</textarea>
+            </div>
         </div>
+
+        {% if task %}
+        <div class="panel mb-3">
+            <div class="panel-header"><h6 class="mb-0"><i class="bi bi-paperclip"></i> 交付物</h6></div>
+            <div class="panel-body">
+                {% if task.deliverables %}
+                <div class="deliverable-list mb-3">
+                    {% for d in task.deliverables %}
+                    <div class="deliverable-item">
+                        <span class="d-flex align-items-center gap-2">
+                            {% if d.type == 'file' %}
+                            <i class="bi bi-file-earmark text-blue"></i> <a href="{{ d.url }}" target="_blank">{{ d.name }}</a>
+                            {% else %}
+                            <i class="bi bi-link-45deg text-green"></i> <a href="{{ d.url }}" target="_blank">{{ d.name }}</a>
+                            {% endif %}
+                            <small class="text-muted">{{ d.uploaded_at }}</small>
+                        </span>
+                        <form method="post" action="{{ url_for('task.remove_deliverable', task_id=task.id, idx=loop.index0) }}" style="display:inline" onsubmit="return confirm('确定删除该交付物？')">
+                            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-2">暂无交付物。提交测试前请上传代码仓库链接、部署地址、文件等。</p>
+                {% endif %}
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="file" class="form-control form-control-sm" name="deliverable_files" multiple>
+                        <small class="text-muted">上传文件</small>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="url" class="form-control form-control-sm" name="deliverable_link" placeholder="输入链接">
+                        <small class="text-muted">或粘贴链接</small>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control form-control-sm" name="deliverable_link_name" placeholder="名称">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <button type="submit" class="btn btn-primary">保存</button>
         <a href="{{ url_for('task.board') }}" class="btn btn-secondary">取消</a>
     </form>

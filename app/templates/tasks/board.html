@@ -12,7 +12,15 @@
     </div>
     <form class="row g-2 mb-3" method="get">
         <div class="col-md-3"><select class="form-select form-select-sm" name="project_id" onchange="this.form.submit()"><option value="">全部项目</option>{% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if filter_project == p.id }}>{{ p.name }}</option>{% endfor %}</select></div>
-        <div class="col-md-3"><select class="form-select form-select-sm" name="team_id" onchange="this.form.submit()"><option value="">全部小组</option>{% for t in teams %}<option value="{{ t.id }}" {{ 'selected' if filter_team == t.id }}>{{ t.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><select class="form-select form-select-sm" name="team_id" onchange="this.form.submit()">
+            {% if my_team %}<option value="{{ my_team.id }}" {{ 'selected' if filter_team == my_team.id }}>我的小组：{{ my_team.name }}</option>{% endif %}
+            <option value="">全部小组</option>
+            {% for t in teams %}
+            {% if not my_team or t.id != my_team.id %}
+            <option value="{{ t.id }}" {{ 'selected' if filter_team == t.id }}>{{ t.name }}</option>
+            {% endif %}
+            {% endfor %}
+        </select></div>
         <div class="col-md-3"><select class="form-select form-select-sm" name="assignee_id" onchange="this.form.submit()"><option value="">全部负责人</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if filter_assignee == u.id }}>{{ u.real_name }}</option>{% endfor %}</select></div>
         <div class="col-md-2"><a href="{{ url_for('task.board') }}" class="btn btn-outline-secondary btn-sm w-100">清除筛选</a></div>
     </form>
@@ -33,7 +41,7 @@
                 <span class="badge rounded-pill bg-secondary">{{ tasks_by_status[key]|length }}</span>
             </div>
             {% for task in tasks_by_status[key] %}
-            <div class="kanban-card" data-task-id="{{ task.id }}" draggable="true">
+            <div class="kanban-card" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" draggable="true">
                 <div class="card-title">
                     <a href="{{ url_for('task.task_detail', task_id=task.id) }}" class="text-decoration-none">{{ task.title }}</a>
                 </div>
@@ -49,31 +57,4 @@
     </div>
 </div>
 {% endblock %}
-{% block extra_js %}
-<script>
-// Drag and drop for kanban cards
-document.querySelectorAll('.kanban-card').forEach(card => {
-    card.addEventListener('dragstart', function(e) {
-        e.dataTransfer.setData('text/plain', this.dataset.taskId);
-        this.classList.add('dragging');
-    });
-    card.addEventListener('dragend', function() { this.classList.remove('dragging'); });
-});
-
-document.querySelectorAll('.kanban-column').forEach(column => {
-    column.addEventListener('dragover', function(e) { e.preventDefault(); });
-    column.addEventListener('drop', function(e) {
-        e.preventDefault();
-        const taskId = e.dataTransfer.getData('text/plain');
-        const newStatus = this.dataset.status;
-        fetch('/tasks/' + taskId + '/status', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({status: newStatus})
-        }).then(r => r.json()).then(data => {
-            if (data.ok) location.reload();
-        });
-    });
-});
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}

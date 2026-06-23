@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h3>{{ '编辑' if record else '记录' }} AI 使用</h3>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <div class="row">
             <div class="col-md-6 mb-3"><label for="tool_name" class="form-label">AI 工具名称</label><input type="text" class="form-control" id="tool_name" name="tool_name" value="{{ record.tool_name if record else '' }}" required placeholder="通义灵码、豆包、ChatGPT..."></div>
             <div class="col-md-6 mb-3"><label for="scene_category" class="form-label">使用场景</label><select class="form-select" id="scene_category" name="scene_category">{% for k, v in ai_scenes.items() %}<option value="{{ k }}" {{ 'selected' if record and record.scene_category == k }}>{{ v }}</option>{% endfor %}</select></div>
@@ -18,8 +18,24 @@
         <div class="row">
             <div class="col-md-4 mb-3"><div class="form-check"><input type="checkbox" class="form-check-input" id="is_adopted" name="is_adopted" {{ 'checked' if not record or record.is_adopted }}><label class="form-check-label" for="is_adopted">是否直接采用</label></div></div>
             <div class="col-md-4 mb-3"><div class="form-check"><input type="checkbox" class="form-check-input" id="has_modified" name="has_modified" {{ 'checked' if record and record.has_modified }}><label class="form-check-label" for="has_modified">是否进行修改</label></div></div>
-            <div class="col-md-4 mb-3"><label for="related_files" class="form-label">相关代码文件</label><input type="text" class="form-control" id="related_files" name="related_files" value="{{ record.related_files if record else '' }}"></div>
+            <div class="col-md-4 mb-3">
+                <label for="ai_files" class="form-label">上传代码文件</label>
+                <input type="file" class="form-control form-control-sm" id="ai_files" name="ai_files" multiple>
+                <small class="text-muted">可多选文件上传</small>
+            </div>
         </div>
+        <div class="mb-3"><label for="related_files" class="form-label">相关文件路径</label><input type="text" class="form-control" id="related_files" name="related_files" value="{{ record.related_files if record else '' }}" placeholder="或手动输入文件路径，逗号分隔"></div>
+        {% if record and record.related_files %}
+        <div class="mb-2">
+            <small class="text-muted">已关联文件：</small>
+            {% for f in record.related_files.split(',') %}
+            {% set f = f.strip() %}
+            {% if f %}
+            <span class="badge bg-light text-dark me-1 mb-1">{{ f }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
         <div class="mb-3"><label for="risk_note" class="form-label">风险说明</label><textarea class="form-control" id="risk_note" name="risk_note" rows="2">{{ record.risk_note if record else '' }}</textarea></div>
         <button type="submit" class="btn btn-primary">保存</button>
         <a href="{{ url_for('ai.list_records') }}" class="btn btn-secondary">取消</a>

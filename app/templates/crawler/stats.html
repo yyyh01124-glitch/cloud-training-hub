@@ -16,7 +16,7 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script src="{{ url_for('static', filename='vendor/echarts-wordcloud.min.js') }}"></script>
 <script>
 (function() {
     echarts.init(document.getElementById('chart-type')).setOption({
@@ -30,8 +30,10 @@
             data:words.length>0?words:[{name:'暂无数据',value:1}]}]
     });
     window.addEventListener('resize',function(){
-        echarts.getInstanceByDom(document.getElementById('chart-type')).resize();
-        echarts.getInstanceByDom(document.getElementById('chart-wordcloud')).resize();
+        var c1 = echarts.getInstanceByDom(document.getElementById('chart-type'));
+        var c2 = echarts.getInstanceByDom(document.getElementById('chart-wordcloud'));
+        if (c1) c1.resize();
+        if (c2) c2.resize();
     });
 })();
 </script>

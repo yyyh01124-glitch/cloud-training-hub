@@ -31,13 +31,19 @@ def create_app(config_name=None):
     from app.routes.crawler import crawler_bp
     from app.routes.ai_records import ai_bp
     from app.routes.dashboard import dashboard_bp
+    from app.routes.classes import class_bp
     from app.routes.announcements import announcement_bp
     from app.routes.scores import score_bp
+    from app.routes.notifications import notif_bp
+    from app.routes.search import search_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(announcement_bp, url_prefix='/announcements')
     app.register_blueprint(score_bp, url_prefix='/scores')
+    app.register_blueprint(class_bp, url_prefix='/classes')
+    app.register_blueprint(notif_bp, url_prefix='/notifications')
+    app.register_blueprint(search_bp, url_prefix='/search')
     app.register_blueprint(project_bp, url_prefix='/projects')
     app.register_blueprint(team_bp, url_prefix='/teams')
     app.register_blueprint(task_bp, url_prefix='/tasks')
@@ -46,6 +52,18 @@ def create_app(config_name=None):
     app.register_blueprint(crawler_bp, url_prefix='/crawler')
     app.register_blueprint(ai_bp, url_prefix='/ai-records')
     app.register_blueprint(dashboard_bp, url_prefix='/')
+
+    # 检查被禁用用户的Session
+    @app.before_request
+    def check_active_user():
+        from flask_login import current_user
+        from flask import redirect, url_for
+        if current_user.is_authenticated and not current_user.is_active:
+            from flask_login import logout_user
+            logout_user()
+            from flask import flash
+            flash('账号已被禁用，请联系管理员', 'danger')
+            return redirect(url_for('auth.login'))
 
     # 错误处理
     @app.errorhandler(403)
@@ -58,14 +76,26 @@ def create_app(config_name=None):
 
     @app.errorhandler(500)
     def internal_error(e):
+        import logging
+        logging.getLogger(__name__).error(f'500 error: {e}', exc_info=True)
         return render_template('errors/500.html'), 500
 
     # 上下文注入
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
+        from app.models import ClassMember
+
+        classes = []
+        if current_user.is_authenticated:
+            class_ids = db.session.query(ClassMember.class_id).filter_by(user_id=current_user.id).all()
+            if class_ids:
+                from app.models import Class
+                classes = Class.query.filter(Class.id.in_([c[0] for c in class_ids])).all()
+
         return {
             'current_user': current_user,
+            'user_classes': classes,
             'roles': {'admin': '管理员', 'teacher': '教师', 'student': '学生'},
             'task_statuses': {
                 'todo': '待开始', 'in_progress': '进行中', 'to_test': '待测试',
@@ -95,6 +125,12 @@ def create_app(config_name=None):
             'project_statuses': {
                 'not_started': '未开始', 'in_progress': '进行中',
                 'completed': '已完成', 'archived': '已归档'
+            },
+            'doc_categories': {
+                'requirement': '需求说明书', 'design': '系统设计文档',
+                'database': '数据库设计文档', 'test_report': '测试报告',
+                'deploy_doc': '部署文档', 'personal_summary': '个人总结',
+                'ppt': '答辩PPT', 'other': '其他'
             },
         }
 
@@ -137,8 +173,9 @@ def _start_crawler_scheduler(app):
                 scheduler.start()
                 import logging
                 logging.getLogger(__name__).info(f'Crawler scheduler started with {len(configs)} configs')
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f'Crawler scheduler failed: {e}')
 
 
 def _run_scheduled_crawl(config_id):

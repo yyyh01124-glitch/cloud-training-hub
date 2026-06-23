@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}系统管理驾驶舱{% endblock %}
+
+{% block content %}
+<div class="welcome-bar mb-3">
+    <div class="welcome-text">
+        <h2>系统管理驾驶舱</h2>
+        <p>全局系统状态概览</p>
+    </div>
+    <div class="welcome-actions">
+        <a href="{{ url_for('admin.users') }}" class="btn btn-primary"><i class="bi bi-person-badge"></i> 用户管理</a>
+        <a href="{{ url_for('class.create_class') }}" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> 创建班级</a>
+    </div>
+</div>
+
+<!-- 核心统计 -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-indigo">
+            <div class="stat-value" data-target="{{ users_total }}">0</div>
+            <div class="stat-label">总用户</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-blue">
+            <div class="stat-value" data-target="{{ classes }}">0</div>
+            <div class="stat-label">活跃班级</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-green">
+            <div class="stat-value" data-target="{{ tasks_total }}">0</div>
+            <div class="stat-label">总任务</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-amber">
+            <div class="stat-value" data-target="{{ reports_today }}">0</div>
+            <div class="stat-label">今日日报</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-red">
+            <div class="stat-value" data-target="{{ bugs_open }}">0</div>
+            <div class="stat-label">未解决Bug</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="stat-card bg-teal">
+            <div class="stat-value" data-target="{{ projects_active }}">0</div>
+            <div class="stat-label">进行中项目</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- 班级概览 -->
+    <div class="col-lg-7">
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-mortarboard"></i> 班级概览</h5></div>
+            <div class="panel-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>班级</th><th>学生</th><th>教师</th><th>任务进度</th><th>今日日报率</th><th></th></tr></thead>
+                    <tbody>
+                        {% for c in class_overview %}
+                        <tr>
+                            <td><a href="{{ url_for('class.class_detail', class_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+                            <td>{{ c.students }}</td>
+                            <td>{{ c.teachers }}</td>
+                            <td>
+                                {% if c.tasks_total > 0 %}
+                                <div class="progress-bar-mini"><div class="progress-bar-fill {% if c.tasks_done/c.tasks_total*100 >= 80 %}bg-green{% elif c.tasks_done/c.tasks_total*100 >= 50 %}bg-amber{% else %}bg-red{% endif %}" style="width:{{ (c.tasks_done/c.tasks_total*100)|int }}%"></div></div>
+                                <small>{{ (c.tasks_done/c.tasks_total*100)|int }}%</small>
+                                {% else %}<small class="text-muted">-</small>{% endif %}
+                            </td>
+                            <td><strong>{{ c.report_rate }}%</strong></td>
+                            <td><a href="{{ url_for('dashboard.index') }}?class_id={{ c.id }}" class="btn btn-outline-primary btn-sm">查看</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统信息 -->
+    <div class="col-lg-5">
+        <div class="row g-2 mb-3">
+            <div class="col-6"><div class="mini-stat bg-blue"><div class="mini-stat-num">{{ students_count }}</div><div class="mini-stat-label">学生</div></div></div>
+            <div class="col-6"><div class="mini-stat bg-indigo"><div class="mini-stat-num">{{ teachers_count }}</div><div class="mini-stat-label">教师</div></div></div>
+            <div class="col-6"><div class="mini-stat bg-green"><div class="mini-stat-num">{{ tasks_done }}</div><div class="mini-stat-label">已完成任务</div></div></div>
+            <div class="col-6"><div class="mini-stat bg-amber"><div class="mini-stat-num">{{ classes_archived }}</div><div class="mini-stat-label">归档班级</div></div></div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6"><div class="mini-stat bg-teal"><div class="mini-stat-num">{{ system_logs_count }}</div><div class="mini-stat-label">操作日志</div></div></div>
+            <div class="col-6"><div class="mini-stat bg-blue"><div class="mini-stat-num">{{ login_logs_today }}</div><div class="mini-stat-label">今日登录</div></div></div>
+        </div>
+
+        <!-- 最近操作日志 -->
+        {% if recent_logs %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-shield-check"></i> 最近操作</h5></div>
+            <div class="panel-body">
+                <div class="activity-feed">
+                    {% for log in recent_logs %}
+                    <div class="activity-item">
+                        <i class="bi bi-{% if log.action == 'create' %}plus-circle text-green{% elif log.action in ('update','change_role','toggle_active') %}pencil text-blue{% elif log.action == 'delete' %}trash text-red{% else %}circle text-muted{% endif %}"></i>
+                        <span>{{ log.user.real_name if log.user else '系统' }} {{ log.action }} {{ log.target_type }}#{{ log.target_id }}</span>
+                        <small>{{ log.created_at.strftime('%m-%d %H:%M') if log.created_at else '' }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="d-grid gap-2">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary"><i class="bi bi-people"></i> 管理用户</a>
+            <a href="{{ url_for('admin.logs') }}" class="btn btn-outline-secondary"><i class="bi bi-shield-check"></i> 系统日志</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

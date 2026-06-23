@@ -1,14 +1,24 @@
 {% extends "base.html" %}
 {% from "_macros.html" import pagination_widget %}
-{% block title %}登录日志 - 云智实训{% endblock %}
+{% block title %}操作日志 - 云智实训{% endblock %}
 {% block content %}
 <div class="container mt-4">
-    <h3>登录日志</h3>
+    <h3>操作日志</h3>
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if tab == 'login' }}" href="{{ url_for('admin.logs', tab='login') }}">登录日志</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if tab == 'system' }}" href="{{ url_for('admin.logs', tab='system') }}">操作日志</a>
+        </li>
+    </ul>
+
+    {% if tab == 'login' %}
     <div class="table-card">
         <table class="table table-hover">
             <thead><tr><th>时间</th><th>用户ID</th><th>IP</th><th>结果</th><th>原因</th></tr></thead>
             <tbody>
-                {% for log in logs.items %}
+                {% for log in login_logs.items %}
                 <tr>
                     <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>{{ log.user_id }}</td>
@@ -21,8 +31,30 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% from "_macros.html" import pagination_widget %}
-        {{ pagination_widget(logs, 'admin.logs') }}
+        {{ pagination_widget(login_logs, 'admin.logs') }}
     </div>
+    {% else %}
+    <div class="table-card">
+        <table class="table table-hover">
+            <thead><tr><th>时间</th><th>用户</th><th>操作</th><th>模块</th><th>目标</th><th>详情</th><th>IP</th></tr></thead>
+            <tbody>
+                {% for log in sys_logs.items %}
+                <tr>
+                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '' }}</td>
+                    <td>{{ log.user.real_name if log.user else '系统' }}</td>
+                    <td><span class="badge bg-{{ 'success' if log.action == 'create' else ('warning' if log.action in ('update','toggle_active','change_role','review') else 'danger') }}">{{ log.action }}</span></td>
+                    <td>{{ log.module }}</td>
+                    <td>{{ log.target_type }} #{{ log.target_id }}</td>
+                    <td><small>{{ log.detail|tojson if log.detail else '' }}</small></td>
+                    <td>{{ log.ip_address }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">暂无日志</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {{ pagination_widget(sys_logs, 'admin.logs') }}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

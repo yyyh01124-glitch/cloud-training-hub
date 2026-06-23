@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}通知{% endblock %}
+{% block page_title_bar %}通知{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 通知{% endblock %}
+
+{% block top_actions %}
+{% if unread > 0 %}
+<form method="post" action="{{ url_for('notification.mark_all_read') }}" style="display:inline">
+    <button class="btn btn-outline-primary btn-sm"><i class="bi bi-check-all"></i> 全部已读</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if notifs.items %}
+{% for n in notifs.items %}
+<a href="{{ url_for('notification.mark_read', notif_id=n.id) }}"
+   class="notification-item {% if not n.is_read %}unread{% endif %}" style="display:block;text-decoration:none;color:inherit;">
+    <div class="{% if not n.is_read %}fw-bold{% endif %}">
+        <i class="bi bi-{{ 'bell-fill text-primary' if not n.is_read else 'bell text-muted' }}"></i>
+        {{ n.title }}
+        <small class="text-muted float-end">{{ n.created_at.strftime('%m-%d %H:%M') if n.created_at else '' }}</small>
+    </div>
+    {% if n.content %}
+    <div class="text-muted small mt-1">{{ n.content }}</div>
+    {% endif %}
+</a>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-bell-slash"></i></div>
+    <p>暂无通知</p>
+</div>
+{% endif %}
+{% endblock %}

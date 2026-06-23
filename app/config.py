@@ -11,6 +11,7 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
         'pool_recycle': 3600,
+        'pool_pre_ping': True,
         'echo': False
     }
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')

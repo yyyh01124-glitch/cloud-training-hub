@@ -8,7 +8,7 @@
     <div class="col-lg-6">
         <div class="chart-box">
             <div class="chart-title">{{ s.project_name }} ({{ s.total }} 任务)</div>
-            <div id="chart-project-{{ s.project_id }}" style="height:260px;"></div>
+            <div id="chart-project-{{ s.project_id }}" style="height:260px;width:100%;"></div>
         </div>
     </div>
     {% endfor %}
@@ -16,20 +16,32 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-(function() {
+(function initCharts() {
+    if (typeof echarts === 'undefined') {
+        setTimeout(initCharts, 100);
+        return;
+    }
     var stats = {{ stats|tojson }};
     stats.forEach(function(s) {
-        var data = [
-            {name:'待开始',value:s.status_counts.todo},
-            {name:'进行中',value:s.status_counts.in_progress},
-            {name:'待测试',value:s.status_counts.to_test},
-            {name:'已完成',value:s.status_counts.done},
-            {name:'已延期',value:s.status_counts.delayed},
-            {name:'已关闭',value:s.status_counts.closed}
-        ];
-        echarts.init(document.getElementById('chart-project-'+s.project_id)).setOption({
-            tooltip:{trigger:'item'}, legend:{bottom:0,textStyle:{fontSize:11}},
-            series:[{type:'pie',radius:['40%','65%'],itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},data:data}]
+        var dom = document.getElementById('chart-project-' + s.project_id);
+        if (!dom) return;
+        var chart = echarts.init(dom);
+        chart.setOption({
+            tooltip: {trigger: 'item'},
+            legend: {bottom: 0, textStyle: {fontSize: 11}},
+            series: [{
+                type: 'pie',
+                radius: ['40%', '65%'],
+                itemStyle: {borderRadius: 4, borderColor: '#fff', borderWidth: 2},
+                data: [
+                    {name: '待开始', value: s.status_counts.todo},
+                    {name: '进行中', value: s.status_counts.in_progress},
+                    {name: '待测试', value: s.status_counts.to_test},
+                    {name: '已完成', value: s.status_counts.done},
+                    {name: '已延期', value: s.status_counts.delayed},
+                    {name: '已关闭', value: s.status_counts.closed}
+                ]
+            }]
         });
     });
 })();

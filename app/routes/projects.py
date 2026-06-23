@@ -1,10 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from datetime import datetime
-
 from app.extensions import db
 from app.models import Course, Project, User, Team
-from app.utils.decorators import teacher_or_admin
+from app.utils.decorators import teacher_or_admin, log_activity
 
 project_bp = Blueprint('project', __name__)
 
@@ -35,6 +33,7 @@ def create_course():
         )
         db.session.add(course)
         db.session.commit()
+        log_activity('create', 'project', 'Course', course.id, {'name': course.name})
         flash('课程创建成功', 'success')
         return redirect(url_for('project.list_courses'))
     teachers = User.query.filter(User.role.has(name='teacher')).all()
@@ -72,6 +71,40 @@ def edit_course(course_id):
         return redirect(url_for('project.course_detail', course_id=course.id))
     teachers = User.query.filter(User.role.has(name='teacher')).all()
     return render_template('projects/course_form.html', course=course, teachers=teachers)
+
+
+@project_bp.route('/courses/<int:course_id>/clone', methods=['POST'])
+@login_required
+@teacher_or_admin
+def clone_course(course_id):
+    """克隆课程及其下所有项目（不复制具体任务）"""
+    original = db.session.get(Course, course_id)
+    if not original:
+        flash('课程不存在', 'danger')
+        return redirect(url_for('project.list_courses'))
+    new_course = Course(
+        class_id=original.class_id,
+        name=original.name + '（副本）',
+        description=original.description,
+        teacher_id=current_user.id,
+        start_date=None, end_date=None, is_active=False
+    )
+    db.session.add(new_course)
+    db.session.flush()
+    for proj in original.projects.all():
+        new_proj = Project(
+            course_id=new_course.id,
+            name=proj.name,
+            description=proj.description,
+            status='not_started',
+            tech_stack=proj.tech_stack,
+            score_rule=proj.score_rule
+        )
+        db.session.add(new_proj)
+    db.session.commit()
+    log_activity('clone', 'project', 'Course', new_course.id, {'from': original.id, 'name': new_course.name})
+    flash(f'课程已克隆为「{new_course.name}」，包含 {original.projects.count()} 个项目', 'success')
+    return redirect(url_for('project.course_detail', course_id=new_course.id))
 
 
 @project_bp.route('/courses/<int:course_id>/delete', methods=['POST'])
@@ -118,6 +151,7 @@ def create_project():
         )
         db.session.add(project)
         db.session.commit()
+        log_activity('create', 'project', 'Project', project.id, {'name': project.name})
         flash('项目创建成功', 'success')
         return redirect(url_for('project.list_projects'))
     courses = Course.query.filter_by(is_active=True).all()

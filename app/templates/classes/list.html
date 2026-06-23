@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}班级管理{% endblock %}
+{% block page_title_bar %}{{ '班级管理' if current_user.role.name in ('admin','teacher') else '我的班级' }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> 班级{% endblock %}
+
+{% block top_actions %}
+{% if current_user.role.name in ('admin', 'teacher') %}
+<a href="{{ url_for('class.create_class') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 创建班级</a>
+<a href="{{ url_for('class.list_classes', archived='1' if not show_archived else '0') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-{{ 'archive' if not show_archived else 'eye' }}"></i>
+    {{ '查看归档' if not show_archived else '当前班级' }}
+</a>
+{% endif %}
+{% if current_user.role.name == 'student' %}
+<a href="{{ url_for('class.join_class') }}" class="btn btn-primary"><i class="bi bi-box-arrow-in-right"></i> 加入班级</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if classes %}
+<div class="row g-3">
+    {% for cls in classes %}
+    <div class="col-md-6 col-lg-4">
+        <div class="panel">
+            <div class="panel-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1"><a href="{{ url_for('class.class_detail', class_id=cls.id) }}">{{ cls.name }}</a></h5>
+                        <small class="text-muted">{{ cls.description or '暂无描述' }}</small>
+                    </div>
+                    {% if cls.is_archived %}<span class="badge bg-secondary">已归档</span>{% endif %}
+                </div>
+                <div class="d-flex gap-3 text-muted small">
+                    <span><i class="bi bi-people"></i> {{ cls.members.filter_by(role_in_class='student').count() }} 名学生</span>
+                    <span><i class="bi bi-person-badge"></i> {{ cls.members.filter_by(role_in_class='teacher').count() }} 名教师</span>
+                </div>
+                <div class="mt-2 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">邀请码：<code class="text-primary">{{ cls.invite_code }}</code></span>
+                    {% if current_user.role.name == 'admin' %}
+                    <form method="post" action="{{ url_for('class.delete_class', class_id=cls.id) }}" onsubmit="return confirm('确定删除班级「{{ cls.name }}」？该操作不可恢复。')">
+                        <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-mortarboard"></i></div>
+    <p>{% if current_user.role.name == 'student' %}你还没有加入任何班级{% else %}还没有创建班级{% endif %}</p>
+    {% if current_user.role.name in ('admin', 'teacher') %}
+    <a href="{{ url_for('class.create_class') }}" class="btn btn-primary">创建第一个班级</a>
+    {% else %}
+    <a href="{{ url_for('class.join_class') }}" class="btn btn-primary">加入班级</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

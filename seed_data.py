@@ -9,13 +9,20 @@ os.environ['SECRET_KEY'] = 'seed'
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import create_app
 from app.extensions import db
-from app.models import *
+from app.models import (User, Role, Course, Project, Team, TeamMember, Task,
+                        DailyReport, Bug, AiRecord, CrawlerConfig, CrawlerData,
+                        Score, Announcement, Class, ClassMember, SystemLog,
+                        LoginLog, Notification, TeamDocument)
 
 app = create_app()
 
 with app.app_context():
     print("Clearing old test data...")
     # Clean existing test data (keep admin)
+    Notification.query.delete()
+    TeamDocument.query.delete()
+    SystemLog.query.delete()
+    LoginLog.query.delete()
     AiRecord.query.delete()
     DailyReport.query.delete()
     Bug.query.delete()
@@ -27,6 +34,9 @@ with app.app_context():
     Score.query.delete()
     Project.query.delete()
     Course.query.delete()
+    Announcement.query.delete()
+    ClassMember.query.delete()
+    Class.query.delete()
     User.query.filter(User.username != 'admin').delete()
     db.session.commit()
     print("Old data cleared.\n")
@@ -57,11 +67,31 @@ with app.app_context():
     db.session.commit()
     print(f"  {len(teachers)} teachers, {len(students)} students created")
 
+    # ---- Classes ----
+    print("Creating class...")
+    cls = Class(name='云计算211班', description='2025-2026学年第二学期', invite_code='CLOUD1', created_by=teachers[0].id)
+    db.session.add(cls)
+    db.session.flush()
+
+    # Add teachers to class
+    for t in teachers:
+        db.session.add(ClassMember(class_id=cls.id, user_id=t.id, role_in_class='teacher'))
+    # Add students to class
+    for s in students:
+        db.session.add(ClassMember(class_id=cls.id, user_id=s.id, role_in_class='student'))
+    # Add admin to class as teacher
+    from app.models import User
+    admin = User.query.filter_by(username='admin').first()
+    if admin:
+        db.session.add(ClassMember(class_id=cls.id, user_id=admin.id, role_in_class='teacher'))
+    db.session.commit()
+    print(f"  Class '{cls.name}' created with code {cls.invite_code}")
+
     # ---- Courses ----
     print("Creating courses...")
-    c1 = Course(name='云计算应用开发实训', description='基于云计算技术的应用开发综合实训，涵盖Python Web、Docker、爬虫等技术',
+    c1 = Course(class_id=cls.id, name='云计算应用开发实训', description='基于云计算技术的应用开发综合实训，涵盖Python Web、Docker、爬虫等技术',
                 teacher_id=teachers[0].id, start_date=date(2026, 3, 1), end_date=date(2026, 7, 15), is_active=True)
-    c2 = Course(name='Python Web项目实训', description='使用Flask框架完成企业级Web应用开发，包含前后端分离和容器化部署',
+    c2 = Course(class_id=cls.id, name='Python Web项目实训', description='使用Flask框架完成企业级Web应用开发，包含前后端分离和容器化部署',
                 teacher_id=teachers[1].id, start_date=date(2026, 3, 15), end_date=date(2026, 7, 30), is_active=True)
     db.session.add_all([c1, c2])
     db.session.commit()
@@ -91,7 +121,7 @@ with app.app_context():
     ]
     teams_list = []
     for pid, name, lid, desc in teams_data:
-        t = Team(project_id=pid, name=name, leader_id=lid, description=desc)
+        t = Team(project_id=pid, class_id=cls.id, name=name, leader_id=lid, description=desc)
         db.session.add(t)
         db.session.flush()
         teams_list.append(t)
@@ -104,12 +134,12 @@ with app.app_context():
     # Team 1 (5 members)
     for i in range(5):
         db.session.add(TeamMember(team_id=teams_list[0].id, user_id=students[i].id, role_in_team=member_roles[i]))
-    # Team 2 (5 members)
-    for i in range(5, 10):
+    # Team 2 (3 members: index 5,6,7)
+    for i in range(5, 8):
         db.session.add(TeamMember(team_id=teams_list[1].id, user_id=students[i].id, role_in_team=member_roles[i - 5]))
-    # Team 3 (2 members - partial)
-    db.session.add(TeamMember(team_id=teams_list[2].id, user_id=students[0].id, role_in_team='leader'))
-    db.session.add(TeamMember(team_id=teams_list[2].id, user_id=students[1].id, role_in_team='backend'))
+    # Team 3 (2 members: index 8,9 - p2 is different project, no overlap)
+    db.session.add(TeamMember(team_id=teams_list[2].id, user_id=students[8].id, role_in_team='leader'))
+    db.session.add(TeamMember(team_id=teams_list[2].id, user_id=students[9].id, role_in_team='backend'))
     db.session.commit()
     print(f"  12 team members added")
 

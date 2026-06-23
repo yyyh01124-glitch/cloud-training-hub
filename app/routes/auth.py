@@ -4,7 +4,7 @@ from datetime import datetime
 
 from app.extensions import db
 from app.models import User, LoginLog
-from app.utils.decorators import role_required
+from app.utils.decorators import role_required, log_activity
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -109,6 +109,7 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
+            log_activity('create', 'auth', 'User', user.id, {'username': user.username, 'real_name': user.real_name})
             flash(f'注册成功，请登录', 'success')
             if is_admin:
                 return redirect(url_for('admin.users'))
@@ -126,7 +127,16 @@ def profile():
         current_user.real_name = request.form.get('real_name', '').strip()
         current_user.email = request.form.get('email', '').strip()
         current_user.phone = request.form.get('phone', '').strip()
+        avatar = request.files.get('avatar')
+        if avatar and avatar.filename:
+            from app.utils.upload import save_upload
+            path = save_upload(avatar, 'avatars')
+            if path:
+                current_user.avatar = '/' + path
+            else:
+                flash('头像格式不支持，请上传 jpg/png/gif/webp 格式的图片', 'warning')
         db.session.commit()
+        log_activity('update', 'auth', 'User', current_user.id, {'action': 'profile_update'})
         flash('个人信息已更新', 'success')
         return redirect(url_for('auth.profile'))
     return render_template('auth/profile.html')
@@ -149,6 +159,7 @@ def change_password():
         else:
             current_user.set_password(new_pw)
             db.session.commit()
+            log_activity('update', 'auth', 'User', current_user.id, {'action': 'password_change'})
             flash('密码已修改', 'success')
             return redirect(url_for('auth.profile'))
 

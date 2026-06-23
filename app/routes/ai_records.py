@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.extensions import db
-from app.models import AiRecord, Task
+from app.models import AiRecord, Task, User
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -29,6 +29,20 @@ def list_records():
 @login_required
 def create_record():
     if request.method == 'POST':
+        # 处理文件上传
+        from app.utils.upload import save_upload
+        uploaded_paths = []
+        ai_files = request.files.getlist('ai_files')
+        for f in ai_files:
+            if f and f.filename:
+                path = save_upload(f, 'ai_files')
+                if path:
+                    uploaded_paths.append(f.filename)
+        # 合并手动输入的路径和上传的文件名
+        related = request.form.get('related_files', '')
+        if uploaded_paths:
+            related = (related + ',' if related else '') + ','.join(uploaded_paths)
+
         record = AiRecord(
             user_id=current_user.id,
             task_id=request.form.get('task_id', type=int) or None,
@@ -41,7 +55,7 @@ def create_record():
             has_modified=request.form.get('has_modified') == 'on',
             modification_note=request.form.get('modification_note', ''),
             effect_description=request.form.get('effect_description', ''),
-            related_files=request.form.get('related_files', ''),
+            related_files=related,
             risk_note=request.form.get('risk_note', '')
         )
         db.session.add(record)
@@ -82,8 +96,20 @@ def edit_record(record_id):
         record.has_modified = request.form.get('has_modified') == 'on'
         record.modification_note = request.form.get('modification_note', '')
         record.effect_description = request.form.get('effect_description', '')
-        record.related_files = request.form.get('related_files', '')
         record.risk_note = request.form.get('risk_note', '')
+        # 处理文件上传
+        from app.utils.upload import save_upload
+        uploaded_paths = []
+        ai_files = request.files.getlist('ai_files')
+        for f in ai_files:
+            if f and f.filename:
+                path = save_upload(f, 'ai_files')
+                if path:
+                    uploaded_paths.append(f.filename)
+        related = request.form.get('related_files', '')
+        if uploaded_paths:
+            related = (related + ',' if related else '') + ','.join(uploaded_paths)
+        record.related_files = related
         db.session.commit()
         flash('记录已更新', 'success')
         return redirect(url_for('ai.record_detail', record_id=record.id))

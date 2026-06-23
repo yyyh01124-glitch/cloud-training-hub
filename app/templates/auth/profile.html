@@ -28,6 +28,13 @@
                         <label for="phone" class="form-label">手机号</label>
                         <input type="text" class="form-control" id="phone" name="phone" value="{{ current_user.phone }}">
                     </div>
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label">头像</label>
+                        {% if current_user.avatar %}
+                        <div class="mb-2"><img src="{{ current_user.avatar }}" alt="头像" style="width:80px;height:80px;border-radius:50%;object-fit:cover;"></div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                    </div>
                     <button type="submit" class="btn btn-primary">保存</button>
                 </form>
             </div>

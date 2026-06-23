@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}批量导入学生{% endblock %}
+{% block page_title_bar %}批量导入学生{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('admin.users') }}">用户管理</a> <span>/</span> 批量导入{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h5>从Excel导入学生</h5>
+    <div class="alert alert-info">
+        <strong>Excel 模板格式：</strong>
+        <table class="table table-sm mb-0 mt-2">
+            <thead><tr><th>用户名</th><th>姓名</th><th>邮箱</th><th>手机号</th></tr></thead>
+            <tbody>
+                <tr><td>zhangsan</td><td>张三</td><td>zhangsan@mail.com</td><td>13800000000</td></tr>
+                <tr><td>lisi</td><td>李四</td><td>lisi@mail.com</td><td>13900000000</td></tr>
+            </tbody>
+        </table>
+        <small class="text-muted">默认密码为 123456，导入后学生凭用户名密码登录</small>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="class_id" class="form-label">加入班级（可选）</label>
+            <select class="form-select" id="class_id" name="class_id">
+                <option value="">不加入班级</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="file" class="form-label">Excel 文件</label>
+            <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> 导入</button>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

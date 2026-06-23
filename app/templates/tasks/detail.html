@@ -1,33 +1,84 @@
 {% extends "base.html" %}
 {% from "_macros.html" import task_status_badge, priority_badge %}
 {% block title %}{{ task.title }}{% endblock %}
+{% block page_title_bar %}{{ task.title }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('task.board') }}">任务看板</a> <span>/</span> {{ task.title }}{% endblock %}
+{% block top_actions %}
+<a href="{{ url_for('task.edit_task', task_id=task.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+{% if current_user.role.name in ('admin', 'teacher') %}
+<form method="post" action="{{ url_for('task.delete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认删除该任务？')">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> 删除</button>
+</form>
+{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>{{ task.title }}</h3>
-        <a href="{{ url_for('task.edit_task', task_id=task.id) }}" class="btn btn-outline-primary btn-sm">编辑</a>
-    </div>
-    <div class="row">
-        <div class="col-md-8">
-            <div class="detail-section">
-                <h5>描述</h5>
-                <p>{{ task.description or '暂无描述' }}</p>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-card-text"></i> 描述</h5></div>
+            <div class="panel-body"><p>{{ task.description or '暂无描述' }}</p></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-check2-square"></i> 完成说明</h5></div>
+            <div class="panel-body"><p>{{ task.completion_note or '暂无' }}</p></div>
+        </div>
+
+        <!-- 交付物 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="bi bi-paperclip"></i> 交付物</h5>
+                {% if task.deliverables %}<span class="panel-badge bg-blue">{{ task.deliverables|length }}</span>{% endif %}
             </div>
-            <div class="detail-section">
-                <h5>完成说明</h5>
-                <p>{{ task.completion_note or '暂无' }}</p>
+            <div class="panel-body">
+                {% if task.deliverables %}
+                <div class="deliverable-list">
+                    {% for d in task.deliverables %}
+                    <div class="deliverable-item">
+                        {% if d.type == 'file' %}
+                        <i class="bi bi-file-earmark text-blue"></i>
+                        <a href="{{ d.url }}" target="_blank">{{ d.name }}</a>
+                        {% else %}
+                        <i class="bi bi-link-45deg text-green"></i>
+                        <a href="{{ d.url }}" target="_blank">{{ d.name }}</a>
+                        {% endif %}
+                        <small class="text-muted">{{ d.uploaded_at }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">暂无交付物</p>
+                {% endif %}
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="detail-section">
-                <h5>详情</h5>
-                <p>状态: {{ task_status_badge(task.status) }}</p>
-                <p>优先级: {{ priority_badge(task.priority) }}</p>
-                <p>负责人: {{ task.assignee.real_name if task.assignee else '未分配' }}</p>
-                <p>小组: {{ task.team.name if task.team else '未分配' }}</p>
-                <p>预计工时: {{ task.estimated_hours }}h | 实际工时: {{ task.actual_hours }}h</p>
-                <p>开始: {{ task.start_date or '-' }} | 截止: {{ task.due_date or '-' }}</p>
-                <p class="text-muted small">创建: {{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+
+        {% if task.screenshot_url %}
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-image"></i> 截图</h5></div>
+            <div class="panel-body">
+                <img src="/{{ task.screenshot_url }}" alt="截图" class="img-fluid rounded" style="max-width:100%;">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel">
+            <div class="panel-header"><h5><i class="bi bi-info-circle"></i> 详情</h5></div>
+            <div class="panel-body">
+                <div class="mb-2">状态: {{ task_status_badge(task.status) }}</div>
+                <div class="mb-2">优先级: {{ priority_badge(task.priority) }}</div>
+                <div class="mb-2">负责人: <strong>{{ task.assignee.real_name if task.assignee else '未分配' }}</strong></div>
+                <div class="mb-2">小组: {{ task.team.name if task.team else '未分配' }}</div>
+                <div class="mb-2">项目: {{ task.project.name if task.project else '-' }}</div>
+                <div class="mb-2">预计工时: {{ task.estimated_hours }}h | 实际工时: {{ task.actual_hours }}h</div>
+                <div class="mb-2">开始: {{ task.start_date or '-' }} | 截止: {{ task.due_date or '-' }}</div>
+                {% if task.related_bug %}
+                <div class="mb-2">关联Bug: <a href="{{ url_for('bug.bug_detail', bug_id=task.related_bug.id) }}">{{ task.related_bug.title }}</a></div>
+                {% endif %}
+                <p class="text-muted small mt-3 mb-0">创建: {{ task.created_at.strftime('%Y-%m-%d %H:%M') if task.created_at else '' }}</p>
+                <p class="text-muted small mb-0">更新: {{ task.updated_at.strftime('%Y-%m-%d %H:%M') if task.updated_at else '' }}</p>
             </div>
         </div>
     </div>

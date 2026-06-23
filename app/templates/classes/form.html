@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if cls else '创建' }}班级{% endblock %}
+{% block page_title_bar %}{{ '编辑' if cls else '创建' }}班级{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('dashboard.index') }}">首页</a> <span>/</span> <a href="{{ url_for('class.list_classes') }}">班级</a> <span>/</span> {{ '编辑' if cls else '创建' }}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h5 class="mb-3">{{ '编辑' if cls else '创建新班级' }}</h5>
+    <form method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">班级名称 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ cls.name if cls else '' }}" placeholder="如：云计算211班" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">班级描述</label>
+            <textarea class="form-control" id="description" name="description" rows="3" placeholder="如：2025-2026学年第二学期实训班">{{ cls.description if cls else '' }}</textarea>
+        </div>
+        {% if not cls %}
+        <div class="alert alert-info"><i class="bi bi-info-circle"></i> 创建后将自动生成6位邀请码，学生凭邀请码加入班级</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">{{ '保存' if cls else '创建班级' }}</button>
+        <a href="{{ url_for('class.list_classes') }}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

@@ -87,11 +87,14 @@ def run_crawl(config_id):
     try:
         from crawler.spider import crawl_url
         results = crawl_url(config.source_url, config.source_type)
-        from crawler.parser import parse_and_save
-        count = parse_and_save(results, config)
-        flash(f'采集完成，新增 {count} 条数据', 'success')
+        if not results:
+            flash('未采集到数据，该网站可能有反爬机制或页面结构与配置不匹配', 'warning')
+        else:
+            from crawler.parser import parse_and_save
+            count = parse_and_save(results, config)
+            flash(f'采集完成，共抓取 {len(results)} 条，新增入库 {count} 条', 'success')
     except Exception as e:
-        flash(f'采集失败: {str(e)}', 'danger')
+        flash('采集失败，请检查目标网址是否可访问', 'danger')
     return redirect(url_for('crawler.data_list'))
 
 
